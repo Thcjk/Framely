@@ -1067,3 +1067,25 @@ select.input {
     display: none;
   }
 }
+
+/* Spaltenzahl direkt in der Werkzeugleiste */
+.stage__grid {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 4px 7px;
+}
+
+.stage__grid input {
+  width: 38px;
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  background: none;
+  font-size: 12px;
+  color: var(--ink);
+  padding: 0 2px;
+}

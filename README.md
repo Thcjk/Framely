@@ -17,19 +17,32 @@ und Smartphone installierbar und funktioniert danach auch offline.
 
 Ein Projekt ist ein Carousel aus beliebig vielen Slides. Jede Slide ist frei gestaltbar:
 
-- **21 Vorlagen** als Startpunkt, in vier Gruppen:
+- **35 Vorlagen** als Startpunkt, in acht Gruppen:
   *Bild* (Vollbild, Bild mit Rand, Hochformat zentriert) ·
   *Split* (Vollbild neben Weissfläche – links, rechts, oben) ·
   *Mehrere* (Gross + klein, Überlappend, Zwei ungleich, Drei in Reihe, Drei versetzt,
   Streifen, Kontaktbogen 6 und 9) ·
+  *Rail* (Kopfzeile mit `(00)` · Serientitel · Jahr, Bilder die über den Rand
+  hinauslaufen, Bildunterschrift unten) ·
+  *Spread* (Doppelseiten-Look: Vollbild neben Textblock, Bildpaar mit Unterschrift,
+  Bild + Fliesstext) ·
+  *Index* (nummerierte Streuung mit `(01)`-Marken, Index mit Bildunterschriften,
+  dichtes Mosaik, Inhaltsverzeichnis, dunkle Index-Seite, Moodboard mit Farbfeldern) ·
   *Typo* (Cover mit Display-Schrift, Cover mit Bild, Text + Bild, Bild + Zitat,
-  dunkle Infoseite, Schluss/Credits, leere Fläche)
+  dunkle Infoseite, Schluss/Credits) ·
+  *Frei* (leere Fläche – mit oder ohne Ecken-Marken)
 - **Freie Platzierung**: jedes Element lässt sich ziehen, an den Ecken skalieren und
   stapeln (nach vorne / nach hinten). Mit den Pfeiltasten pixelgenau, mit Shift gröber.
+- **Freier Modus** für den Fall, dass keine Vorlage passt: leere Slide, dazu zwei
+  Hilfen in der Werkzeugleiste –
+  *Magnet* (Elemente rasten an Rändern, Mitte und Nachbarelementen ein, rote
+  Hilfslinien zeigen wo; Alt-Taste hebt es kurz auf) und
+  *Raster* (Spaltenraster im Magazin-Sinn, Spaltenzahl einstellbar). Beides ist reine
+  Ansichtshilfe und erscheint nie im Export.
 - **Bildausschnitt** je Bild: verschieben (Modus *Ausschnitt* oder Alt-Taste),
   zoomen (Mausrad, zwei Finger, Regler), in 90°-Schritten drehen.
-- **Textelemente** mit acht typografischen Rollen (Display, Titel, Titel Serif, Zitat,
-  Label, Fliesstext, Credits, Ecken-Marke) – Grösse, Laufweite, Ausrichtung, Versalien,
+- **Textelemente** mit neun typografischen Rollen (Display, Titel, Titel Serif, Zitat,
+  Label, Fliesstext, Credits, Bildunterschrift, Ecken-Marke) – Grösse, Laufweite, Ausrichtung, Versalien,
   Schriftart und Farbe einstellbar. Textfarbe stellt sich automatisch auf den
   Hintergrund ein (heller Text auf dunklen Slides).
 - **Automatische Inhalte**: ein Textelement kann Seitenzahl (`01/10`, `1/10` oder `01`),
@@ -60,7 +73,7 @@ Rahmen auf alle Bilder.
 
 | | |
 | --- | --- |
-| **Instagram** | 4:5 (Carousel), 1:1, 9:16 |
+| **Instagram** | 4:5 (Carousel, Standard), 1:1, 9:16 (Story) |
 | **Druck** | 10×15 bis 70×100, A4, A3 – hoch und quer |
 | **Auflösungsprüfung** | effektive dpi je Bild, dreistufige Warnung |
 | **Export** | ganzes Carousel oder einzelne Slide, als JPG, PNG oder mehrseitiges PDF |

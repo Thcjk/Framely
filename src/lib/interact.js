@@ -122,3 +122,75 @@ export function zoomImage(item, image, rect, factor, px, py) {
   }
   return { zoom, ...clampOffsets(image, rect, next) }
 }
+
+// --- Freies Gestalten: Magnet und Raster -----------------------------------
+
+/**
+ * Magnet („Snapping“).
+ *
+ * Beim Verschieben rasten Kanten und Mitte eines Elements an markanten
+ * Linien ein: an den Rändern und der Mitte der Slide, an den Kanten der
+ * anderen Elemente und – wenn eingeschaltet – an den Spalten des Rasters.
+ * Zurück kommt das eingerastete Rechteck plus die Linien, die dabei
+ * getroffen wurden (für die Hilfslinien in der Vorschau).
+ *
+ * @returns {{rect:object, guides:Array<{axis:'x'|'y', at:number}>}}
+ */
+export function snapRect(rect, others, { threshold = 0.007, columns = null } = {}) {
+  const xTargets = [0, 0.5, 1]
+  const yTargets = [0, 0.5, 1]
+
+  others.forEach((o) => {
+    xTargets.push(o.x, o.x + o.w / 2, o.x + o.w)
+    yTargets.push(o.y, o.y + o.h / 2, o.y + o.h)
+  })
+
+  if (columns) {
+    const { count, margin, gutter } = columns
+    const usable = 1 - 2 * margin
+    const width = (usable - gutter * (count - 1)) / count
+    for (let i = 0; i < count; i++) {
+      const start = margin + i * (width + gutter)
+      xTargets.push(start, start + width)
+    }
+  }
+
+  /** Sucht die kleinste Verschiebung, die eine Kante auf eine Linie legt. */
+  const findSnap = (positions, targets) => {
+    let best = null
+    for (const position of positions) {
+      for (const target of targets) {
+        const distance = Math.abs(position - target)
+        if (distance <= threshold && (!best || distance < best.distance)) {
+          best = { distance, shift: target - position, at: target }
+        }
+      }
+    }
+    return best
+  }
+
+  const x = findSnap([rect.x, rect.x + rect.w / 2, rect.x + rect.w], xTargets)
+  const y = findSnap([rect.y, rect.y + rect.h / 2, rect.y + rect.h], yTargets)
+
+  const guides = []
+  if (x) guides.push({ axis: 'x', at: x.at })
+  if (y) guides.push({ axis: 'y', at: y.at })
+
+  return {
+    rect: { ...rect, x: rect.x + (x?.shift ?? 0), y: rect.y + (y?.shift ?? 0) },
+    guides,
+  }
+}
+
+/** Standardraster im Magazin-Sinn: Aussenrand, Spalten, Spaltenabstand. */
+export const DEFAULT_GRID = { on: false, count: 6, margin: 0.06, gutter: 0.02 }
+
+/** Die Spalten des Rasters als Rechtecke (0..1) – zum Einzeichnen. */
+export function gridColumns({ count, margin, gutter }) {
+  const usable = 1 - 2 * margin
+  const width = (usable - gutter * (count - 1)) / count
+  return Array.from({ length: count }, (_, i) => ({
+    x: margin + i * (width + gutter),
+    w: width,
+  }))
+}

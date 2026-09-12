@@ -16,7 +16,7 @@ import { useProject } from '../state/ProjectContext.jsx'
 import { renderSlide, toPixels } from '../lib/render.js'
 import {
   hitTest, handleAt, moveRect, resizeRect, panImage, zoomImage, itemPhotoRect,
-  ZOOM_MAX, ZOOM_MIN,
+  snapRect, gridColumns, DEFAULT_GRID, ZOOM_MAX, ZOOM_MIN,
 } from '../lib/interact.js'
 import { resolveFormat } from '../lib/formats.js'
 
@@ -36,6 +36,27 @@ export default function Stage() {
   const [box, setBox] = useState({ width: 0, height: 0 })
   const [cropMode, setCropMode] = useState(false)
   const [dragOver, setDragOver] = useState(false)
+  const [guides, setGuides] = useState([])
+
+  /**
+   * Raster und Magnet sind Ansichtssachen, kein Teil des Projekts – sie
+   * werden darum im Browser gemerkt, nicht im Dokument gespeichert.
+   */
+  const [grid, setGrid] = useState(() => {
+    try {
+      return { ...DEFAULT_GRID, ...JSON.parse(localStorage.getItem('framely.grid') ?? '{}') }
+    } catch {
+      return DEFAULT_GRID
+    }
+  })
+  const [magnet, setMagnet] = useState(() => localStorage.getItem('framely.magnet') !== 'off')
+
+  useEffect(() => {
+    localStorage.setItem('framely.grid', JSON.stringify(grid))
+  }, [grid])
+  useEffect(() => {
+    localStorage.setItem('framely.magnet', magnet ? 'on' : 'off')
+  }, [magnet])
 
   const format = project ? resolveFormat(project) : null
   const total = project?.slides.length ?? 1
@@ -81,6 +102,38 @@ export default function Stage() {
       selectedItemId,
     })
 
+    // Raster einzeichnen (nur Vorschau, nie im Export).
+    if (grid.on) {
+      ctx.save()
+      ctx.fillStyle = 'rgba(0, 90, 255, .06)'
+      gridColumns(grid).forEach((column) => {
+        ctx.fillRect(column.x * W, grid.margin * H, column.w * W, H - 2 * grid.margin * H)
+      })
+      ctx.strokeStyle = 'rgba(0, 90, 255, .25)'
+      ctx.lineWidth = 1 * dpr
+      ctx.strokeRect(grid.margin * W, grid.margin * H, W - 2 * grid.margin * W, H - 2 * grid.margin * H)
+      ctx.restore()
+    }
+
+    // Hilfslinien des Magneten
+    if (guides.length) {
+      ctx.save()
+      ctx.strokeStyle = '#e5484d'
+      ctx.lineWidth = 1 * dpr
+      guides.forEach((guide) => {
+        ctx.beginPath()
+        if (guide.axis === 'x') {
+          ctx.moveTo(guide.at * W, 0)
+          ctx.lineTo(guide.at * W, H)
+        } else {
+          ctx.moveTo(0, guide.at * H)
+          ctx.lineTo(W, guide.at * H)
+        }
+        ctx.stroke()
+      })
+      ctx.restore()
+    }
+
     // Anfasser des gewählten Elements zusätzlich einzeichnen (nur Vorschau).
     const item = slide.items.find((i) => i.id === selectedItemId)
     if (item) {
@@ -99,7 +152,7 @@ export default function Stage() {
         ctx.strokeRect(hx - s / 2, hy - s / 2, s, s)
       }
     }
-  }, [project, slide, images, index, total, selectedItemId, displayW, displayH])
+  }, [project, slide, images, index, total, selectedItemId, displayW, displayH, grid, guides])
 
   // --- Koordinaten eines Zeigers in Leinwand-Einheiten ---------------------
   const toCanvas = useCallback((event) => {
@@ -199,7 +252,17 @@ export default function Stage() {
     const dy = (point.y - g.start.y) / H
 
     if (g.type === 'move') {
-      patchItem(item.id, { rect: moveRect(g.rect, dx, dy) })
+      const moved = moveRect(g.rect, dx, dy)
+      // Alt-Taste hebt den Magneten kurzzeitig auf.
+      if (!magnet || event.altKey) {
+        setGuides([])
+        patchItem(item.id, { rect: moved })
+        return
+      }
+      const others = slide.items.filter((i) => i.id !== item.id).map((i) => i.rect)
+      const snapped = snapRect(moved, others, { columns: grid.on ? grid : null })
+      setGuides(snapped.guides)
+      patchItem(item.id, { rect: snapped.rect })
       return
     }
 
@@ -210,7 +273,10 @@ export default function Stage() {
 
   const endPointer = (event) => {
     pointers.current.delete(event.pointerId)
-    if (pointers.current.size === 0) gesture.current = null
+    if (pointers.current.size === 0) {
+      gesture.current = null
+      setGuides([])
+    }
   }
 
   const onWheel = (event) => {
@@ -329,6 +395,34 @@ export default function Stage() {
             title="Im Ausschnitt-Modus verschiebt das Ziehen das Bild innerhalb seines Rahmens (oder Alt-Taste halten)"
           >
             Ausschnitt
+          </button>
+          <button
+            type="button"
+            className={`btn btn--ghost${grid.on ? ' is-active' : ''}`}
+            onClick={() => setGrid((g) => ({ ...g, on: !g.on }))}
+            title="Spaltenraster einblenden (erscheint nie im Export)"
+          >
+            Raster
+          </button>
+          {grid.on && (
+            <label className="stage__grid">
+              <span>Spalten</span>
+              <input
+                type="number"
+                min="2"
+                max="12"
+                value={grid.count}
+                onChange={(e) => setGrid((g) => ({ ...g, count: Math.max(2, Math.min(12, Number(e.target.value))) }))}
+              />
+            </label>
+          )}
+          <button
+            type="button"
+            className={`btn btn--ghost${magnet ? ' is-active' : ''}`}
+            onClick={() => setMagnet((v) => !v)}
+            title="Elemente rasten an Rändern, Mitte und Nachbarelementen ein (Alt-Taste hebt es kurz auf)"
+          >
+            Magnet
           </button>
 
           {selected && (

@@ -28,6 +28,7 @@ export const TEXT_PRESETS = {
   label: { label: 'Label', size: 0.017, family: 'sans', weight: 500, tracking: 0.18, uppercase: true, lineHeight: 1.4, align: 'left' },
   body: { label: 'Fliesstext', size: 0.021, family: 'sans', weight: 400, tracking: 0, uppercase: false, lineHeight: 1.5, align: 'left' },
   credits: { label: 'Credits', size: 0.016, family: 'sans', weight: 400, tracking: 0.04, uppercase: false, lineHeight: 1.6, align: 'left' },
+  caption: { label: 'Bildunterschrift', size: 0.0135, family: 'sans', weight: 400, tracking: 0.12, uppercase: true, lineHeight: 1.5, align: 'left' },
   micro: { label: 'Ecken-Marke', size: 0.0115, family: 'sans', weight: 500, tracking: 0.2, uppercase: true, lineHeight: 1.2, align: 'left' },
 }
 
@@ -324,16 +325,285 @@ export const SLIDE_TEMPLATES = [
         makeTextItem(rect(0.1, 0.74, 0.8, 0.05), { preset: 'micro', auto: 'handle' }),
       ]),
   },
+  // — Kopf- und Fusszeilen (Magazin-Rail) —
   {
-    id: 'blank',
-    label: 'Leere Fläche',
-    group: 'Typo',
+    id: 'rail-triple',
+    label: 'Rail · drei Bilder',
+    group: 'Rail',
+    slots: 3,
+    background: '#f4f2ed',
+    build: () => [
+      makeTextItem(rect(0.05, 0.05, 0.12, 0.03), { preset: 'micro', auto: 'pageNumber' }),
+      makeTextItem(rect(0.3, 0.05, 0.4, 0.03), { preset: 'micro', auto: 'series', style: { align: 'center' } }),
+      makeTextItem(rect(0.83, 0.05, 0.12, 0.03), { preset: 'micro', auto: 'date', style: { align: 'right' } }),
+      // Aussenbilder laufen bewusst über den Rand hinaus.
+      makeImageItem(rect(-0.08, 0.26, 0.22, 0.4)),
+      makeImageItem(rect(0.28, 0.22, 0.44, 0.48)),
+      makeImageItem(rect(0.86, 0.26, 0.22, 0.4)),
+      makeTextItem(rect(0.05, 0.78, 0.5, 0.08), { preset: 'caption', text: 'INSPO —\nCHRONIQUES DE L’ÉTÉ   [024]' }),
+    ],
+  },
+  {
+    id: 'rail-single',
+    label: 'Rail · ein Bild',
+    group: 'Rail',
+    slots: 1,
+    background: '#f4f2ed',
+    build: () => [
+      makeTextItem(rect(0.05, 0.05, 0.12, 0.03), { preset: 'micro', auto: 'pageNumber' }),
+      makeTextItem(rect(0.3, 0.05, 0.4, 0.03), { preset: 'micro', auto: 'series', style: { align: 'center' } }),
+      makeTextItem(rect(0.83, 0.05, 0.12, 0.03), { preset: 'micro', auto: 'date', style: { align: 'right' } }),
+      makeImageItem(rect(0.16, 0.2, 0.68, 0.54)),
+      makeTextItem(rect(0.16, 0.78, 0.6, 0.06), { preset: 'caption', text: 'Ort, Datum   [01]' }),
+    ],
+  },
+  {
+    id: 'rail-bleed-row',
+    label: 'Rail · Streifen',
+    group: 'Rail',
+    slots: 4,
+    build: () => [
+      makeTextItem(rect(0.05, 0.06, 0.5, 0.03), { preset: 'micro', auto: 'series' }),
+      makeImageItem(rect(-0.06, 0.34, 0.24, 0.3)),
+      makeImageItem(rect(0.2, 0.34, 0.24, 0.3)),
+      makeImageItem(rect(0.46, 0.34, 0.24, 0.3)),
+      makeImageItem(rect(0.72, 0.34, 0.34, 0.3)),
+      makeTextItem(rect(0.05, 0.88, 0.6, 0.04), { preset: 'micro', auto: 'credits' }),
+    ],
+  },
+
+  // — Doppelseiten-Look —
+  {
+    id: 'spread-bleed',
+    label: 'Seite · Bild + Block',
+    group: 'Spread',
+    slots: 3,
+    build: () =>
+      withMarks([
+        makeImageItem(rect(0, 0, 0.5, 1)),
+        makeImageItem(rect(0.57, 0.12, 0.36, 0.3)),
+        makeImageItem(rect(0.57, 0.45, 0.36, 0.24)),
+        makeTextItem(rect(0.57, 0.74, 0.36, 0.12), {
+          preset: 'caption',
+          text: 'FALL / WINTER\nCampaign by\nChairo & Tim',
+        }),
+      ]),
+  },
+  {
+    id: 'spread-pair',
+    label: 'Seite · Paar',
+    group: 'Spread',
+    slots: 2,
+    build: () =>
+      withMarks([
+        makeImageItem(rect(0.05, 0.16, 0.43, 0.56)),
+        makeImageItem(rect(0.52, 0.16, 0.43, 0.56)),
+        makeTextItem(rect(0.52, 0.75, 0.43, 0.08), { preset: 'caption', text: 'Look 01 — 02' }),
+      ]),
+  },
+  {
+    id: 'spread-text',
+    label: 'Seite · Bild + Text',
+    group: 'Spread',
+    slots: 2,
+    build: () =>
+      withMarks([
+        makeImageItem(rect(0.05, 0.12, 0.42, 0.5)),
+        makeTextItem(rect(0.05, 0.66, 0.42, 0.06), { preset: 'label', text: 'Kapitel 01' }),
+        makeTextItem(rect(0.05, 0.73, 0.42, 0.16), {
+          preset: 'caption',
+          text: 'Ein kurzer Text zur Serie: worum es geht, wo sie entstand, was sie zeigt.',
+        }),
+        makeImageItem(rect(0.53, 0.28, 0.42, 0.5)),
+      ]),
+  },
+
+  // — Index, Streuung, Kontaktbogen mit Beschriftung —
+  {
+    id: 'scatter',
+    label: 'Streuung nummeriert',
+    group: 'Index',
+    slots: 6,
+    background: '#f4f2ed',
+    build: () => {
+      const spots = [
+        [0.09, 0.16, 0.2, 0.17],
+        [0.63, 0.1, 0.24, 0.16],
+        [0.79, 0.36, 0.17, 0.14],
+        [0.35, 0.4, 0.26, 0.19],
+        [0.05, 0.47, 0.15, 0.12],
+        [0.42, 0.71, 0.23, 0.15],
+      ]
+      const items = []
+      spots.forEach(([x, y, w, h], i) => {
+        items.push(makeImageItem(rect(x, y, w, h)))
+        items.push(
+          makeTextItem(rect(x, y + h + 0.012, 0.2, 0.025), {
+            preset: 'micro',
+            text: `(0${i + 1})`,
+          }),
+        )
+      })
+      return [...items, markPageNumber(), markCredits()]
+    },
+  },
+  {
+    id: 'index-captions',
+    label: 'Index mit Text',
+    group: 'Index',
+    slots: 6,
+    background: '#f4f2ed',
+    build: () => {
+      const spots = [
+        [0.06, 0.2, 0.18, 0.2],
+        [0.27, 0.16, 0.2, 0.24],
+        [0.5, 0.22, 0.17, 0.18],
+        [0.7, 0.18, 0.24, 0.22],
+        [0.1, 0.55, 0.24, 0.22],
+        [0.38, 0.58, 0.2, 0.19],
+      ]
+      const items = [
+        makeTextItem(rect(0.06, 0.07, 0.5, 0.03), { preset: 'micro', text: 'Index' }),
+        makeTextItem(rect(0.62, 0.07, 0.32, 0.03), { preset: 'micro', auto: 'series', style: { align: 'right' } }),
+      ]
+      spots.forEach(([x, y, w, h], i) => {
+        items.push(makeImageItem(rect(x, y, w, h)))
+        items.push(
+          makeTextItem(rect(x, y + h + 0.01, w + 0.08, 0.03), {
+            preset: 'micro',
+            text: `Motiv ${String(i + 1).padStart(3, '0')}`,
+          }),
+        )
+      })
+      return [...items, markCredits()]
+    },
+  },
+  {
+    id: 'mosaic',
+    label: 'Mosaik dicht',
+    group: 'Index',
+    slots: 8,
+    build: () =>
+      withMarks([
+        makeImageItem(rect(0.06, 0.12, 0.3, 0.26)),
+        makeImageItem(rect(0.37, 0.12, 0.18, 0.16)),
+        makeImageItem(rect(0.56, 0.12, 0.18, 0.16)),
+        makeImageItem(rect(0.75, 0.12, 0.19, 0.26)),
+        makeImageItem(rect(0.37, 0.29, 0.37, 0.19)),
+        makeImageItem(rect(0.06, 0.39, 0.22, 0.22)),
+        makeImageItem(rect(0.29, 0.49, 0.3, 0.26)),
+        makeImageItem(rect(0.6, 0.49, 0.34, 0.26)),
+      ]),
+  },
+  {
+    id: 'contents',
+    label: 'Inhalt',
+    group: 'Index',
+    slots: 4,
+    build: () => [
+      makeTextItem(rect(0.06, 0.08, 0.3, 0.04), { preset: 'label', text: 'Contents' }),
+      makeTextItem(rect(0.56, 0.08, 0.38, 0.14), {
+        preset: 'caption',
+        text: '01  Einleitung\n02  Serie\n03  Credits',
+        style: { align: 'right' },
+      }),
+      ...[0, 1, 2, 3].map((i) =>
+        makeImageItem(rect(0.06 + i * 0.23, 0.32, 0.2, 0.28)),
+      ),
+      ...[0, 1, 2, 3].map((i) =>
+        makeTextItem(rect(0.06 + i * 0.23, 0.62, 0.2, 0.05), {
+          preset: 'micro',
+          text: `0${i + 1} — Kapitel`,
+        }),
+      ),
+      markCredits(),
+    ],
+  },
+  {
+    id: 'dark-index',
+    label: 'Index dunkel',
+    group: 'Index',
+    slots: 0,
+    background: '#141414',
+    build: () => [
+      makeTextItem(rect(0.06, 0.1, 0.4, 0.04), { preset: 'label', auto: 'series' }),
+      ...[0, 1].flatMap((col) =>
+        [0, 1].map((row) =>
+          makeTextItem(rect(0.06 + col * 0.46, 0.3 + row * 0.22, 0.4, 0.18), {
+            preset: 'caption',
+            text: '2024\nProjekt, Ort\nRolle und Beitrag',
+          }),
+        ),
+      ),
+      markPageNumber(),
+      markCredits(),
+    ],
+  },
+
+  // — Moodboard —
+  {
+    id: 'moodboard',
+    label: 'Moodboard',
+    group: 'Index',
+    slots: 4,
+    background: '#f4f2ed',
+    build: () => [
+      makeTextItem(rect(0.06, 0.07, 0.6, 0.05), { preset: 'title', text: 'Moodboard' }),
+      makeTextItem(rect(0.06, 0.17, 0.3, 0.03), { preset: 'micro', text: 'Fotos' }),
+      makeImageItem(rect(0.06, 0.21, 0.26, 0.22)),
+      makeImageItem(rect(0.34, 0.21, 0.22, 0.22)),
+      makeTextItem(rect(0.6, 0.17, 0.34, 0.03), { preset: 'micro', text: 'Farben' }),
+      ...['#efeee8', '#282828', '#ba3f1e', '#7a7f63'].map((color, i) =>
+        makeBlockItem(rect(0.6 + i * 0.09, 0.21, 0.08, 0.07), color),
+      ),
+      makeTextItem(rect(0.6, 0.31, 0.34, 0.1), {
+        preset: 'caption',
+        text: '#efeee8\n#282828\n#ba3f1e',
+      }),
+      makeTextItem(rect(0.06, 0.5, 0.3, 0.03), { preset: 'micro', text: 'Textur' }),
+      makeImageItem(rect(0.06, 0.54, 0.4, 0.2)),
+      makeTextItem(rect(0.52, 0.5, 0.42, 0.03), { preset: 'micro', text: 'Typografie' }),
+      makeTextItem(rect(0.52, 0.55, 0.42, 0.12), {
+        preset: 'caption',
+        text: 'Helvetica Neue\nGeorgia\nViel Weissraum, ruhige Achsen',
+        style: { uppercase: false },
+      }),
+      makeTextItem(rect(0.06, 0.76, 0.3, 0.03), { preset: 'micro', text: 'Elemente' }),
+      makeImageItem(rect(0.06, 0.8, 0.2, 0.12)),
+      makeImageItem(rect(0.28, 0.8, 0.2, 0.12)),
+      makeTextItem(rect(0.52, 0.76, 0.42, 0.16), {
+        preset: 'quote',
+        text: '„Ruhig, dokumentarisch, nah.“',
+      }),
+      markCredits(),
+    ],
+  },
+
+  // — Freies Gestalten —
+  {
+    id: 'free',
+    label: 'Frei · leer',
+    group: 'Frei',
+    slots: 0,
+    build: () => [],
+  },
+  {
+    id: 'free-marks',
+    label: 'Frei · mit Marken',
+    group: 'Frei',
     slots: 0,
     build: () => withMarks([]),
   },
+  {
+    id: 'free-start',
+    label: 'Frei · ein Bild',
+    group: 'Frei',
+    slots: 1,
+    build: () => withMarks([makeImageItem(rect(0.2, 0.26, 0.5, 0.42))]),
+  },
 ]
 
-export const TEMPLATE_GROUPS = ['Bild', 'Split', 'Mehrere', 'Typo']
+export const TEMPLATE_GROUPS = ['Bild', 'Split', 'Mehrere', 'Rail', 'Spread', 'Index', 'Typo', 'Frei']
 
 export function getTemplate(id) {
   return SLIDE_TEMPLATES.find((t) => t.id === id) ?? SLIDE_TEMPLATES[0]
