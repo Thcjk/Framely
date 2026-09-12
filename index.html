@@ -6,15 +6,113 @@
     <meta name="theme-color" content="#111111" />
     <meta
       name="description"
-      content="Framely – Fotos zu Layouts anordnen, rahmen und als Bild, PDF oder Druckdatei exportieren. Alles lokal im Browser."
+      content="Framely – Magazin-Editor für Instagram-Carousels. Fotostrecken gestalten, rahmen und als Bild, PDF oder Druckdatei exportieren. Alles lokal im Browser."
     />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="Framely" />
     <title>Framely</title>
+
+    <!--
+      Startbildschirm.
+
+      Er steht bewusst hier im HTML und nicht in React: so ist er schon da,
+      bevor überhaupt JavaScript geladen ist – kein weisses Aufblitzen beim
+      Öffnen. Die App lädt derweil im Hintergrund; ausgeblendet wird der
+      Startbildschirm von src/lib/splash.js.
+    -->
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 22px;
+        background: #111111;
+        color: #ffffff;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        transition: opacity 0.45s ease;
+      }
+
+      #splash.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #splash .splash__mark {
+        display: block;
+        width: 54px;
+        height: 54px;
+      }
+
+      #splash .splash__name {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.42em;
+        text-indent: 0.42em;
+        text-transform: uppercase;
+      }
+
+      #splash .splash__line {
+        width: 148px;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.22);
+        overflow: hidden;
+      }
+
+      #splash .splash__line::after {
+        content: '';
+        display: block;
+        height: 100%;
+        width: 100%;
+        background: #ffffff;
+        transform: scaleX(0);
+        transform-origin: left;
+        animation: splash-progress 3s linear forwards;
+      }
+
+      #splash .splash__claim {
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.55);
+      }
+
+      @keyframes splash-progress {
+        to {
+          transform: scaleX(1);
+        }
+      }
+
+      /* Wer Animationen abgestellt hat, sieht die Linie einfach gefüllt. */
+      @media (prefers-reduced-motion: reduce) {
+        #splash {
+          transition: none;
+        }
+        #splash .splash__line::after {
+          animation: none;
+          transform: scaleX(1);
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="splash" role="status" aria-label="Framely wird gestartet">
+      <!-- Dieselbe Geometrie wie Favicon und App-Icon. -->
+      <svg class="splash__mark" viewBox="13 13 38 38" aria-hidden="true" fill="#ffffff">
+        <rect x="13" y="13" width="13.7" height="38" />
+        <rect x="32.8" y="13" width="18.2" height="16.7" />
+        <rect x="32.8" y="34.3" width="18.2" height="16.7" />
+      </svg>
+      <span class="splash__name">Framely</span>
+      <span class="splash__line"></span>
+      <span class="splash__claim">Magazin-Editor für Fotostrecken</span>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

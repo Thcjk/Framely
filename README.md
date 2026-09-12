@@ -89,6 +89,13 @@ Projekte und Bilder liegen dauerhaft in der IndexedDB des Browsers und werden
 automatisch gespeichert. Manifest, Icons und Service Worker machen Framely
 installierbar und offline nutzbar.
 
+**Startbildschirm.** Beim Öffnen zeigt Framely drei Sekunden lang einen schwarzen
+Startbildschirm mit der Bildmarke – er steht in [`index.html`](index.html) und ist
+deshalb sofort da, noch bevor JavaScript geladen ist (kein weisses Aufblitzen). Die App
+lädt derweil im Hintergrund; gerechnet wird ab dem Öffnen der Seite, auf langsamen
+Geräten wartet er also entsprechend kürzer. Antippen oder Escape überspringt ihn.
+Dauer und Verhalten stehen in [`src/lib/splash.js`](src/lib/splash.js).
+
 **Die installierte App hält sich selbst aktuell.** Nach einem Deployment muss
 niemand etwas neu installieren: Framely fragt stündlich beim Server nach, ausserdem
 jedes Mal, wenn die App wieder in den Vordergrund kommt oder das Gerät wieder online
