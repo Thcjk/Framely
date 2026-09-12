@@ -1,13 +1,13 @@
 /** Einstiegspunkt: React starten und den Service Worker registrieren. */
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { registerSW } from 'virtual:pwa-register'
 import App from './App.jsx'
 import { ProjectProvider } from './state/ProjectContext.jsx'
+import { setupAutoUpdate } from './lib/updates.js'
 import './styles/app.css'
 
-// Der Service Worker macht die App offline-fähig und aktualisiert sich selbst.
-registerSW({ immediate: true })
+// Macht die App offline-fähig und hält sie selbstständig aktuell.
+setupAutoUpdate()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -76,6 +76,13 @@ Projekte und Bilder liegen dauerhaft in der IndexedDB des Browsers und werden
 automatisch gespeichert. Manifest, Icons und Service Worker machen Framely
 installierbar und offline nutzbar.
 
+**Die installierte App hält sich selbst aktuell.** Nach einem Deployment muss
+niemand etwas neu installieren: Framely fragt stündlich beim Server nach, ausserdem
+jedes Mal, wenn die App wieder in den Vordergrund kommt oder das Gerät wieder online
+ist. Findet sie eine neue Version, sichert sie den aktuellen Stand, zeigt kurz einen
+Hinweis und lädt sich einmal neu – die offene Serie ist danach unverändert da.
+Die Logik steht kommentiert in [`src/lib/updates.js`](src/lib/updates.js).
+
 ---
 
 ## Lokales Setup

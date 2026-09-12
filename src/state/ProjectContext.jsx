@@ -31,6 +31,7 @@ import {
 import { applyTemplate, makeSlide } from '../lib/slides.js'
 import { frameDefaults } from '../lib/frames.js'
 import { resolveFormat } from '../lib/formats.js'
+import { UPDATE_EVENT } from '../lib/updates.js'
 
 const LAST_PROJECT_KEY = 'framely.lastProject'
 
@@ -125,6 +126,25 @@ export function ProjectProvider({ children }) {
     }, 500)
     return () => window.clearTimeout(saveTimer.current)
   }, [project, refreshLists])
+
+  /**
+   * Übernimmt gleich eine neue Version der App, lädt die Seite also neu?
+   * Dann den aktuellen Stand sofort sichern statt auf die Verzögerung des
+   * automatischen Speicherns zu warten.
+   */
+  const latestProject = useRef(project)
+  latestProject.current = project
+  useEffect(() => {
+    const flush = () => {
+      if (latestProject.current) db.saveProject(latestProject.current)
+    }
+    window.addEventListener(UPDATE_EVENT, flush)
+    window.addEventListener('pagehide', flush)
+    return () => {
+      window.removeEventListener(UPDATE_EVENT, flush)
+      window.removeEventListener('pagehide', flush)
+    }
+  }, [])
 
   /** Zentrale Änderungsfunktion: nimmt ein Patch-Objekt oder eine Funktion. */
   const update = useCallback((patchOrFn) => {

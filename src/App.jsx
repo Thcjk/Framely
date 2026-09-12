@@ -8,12 +8,21 @@ import SlideStrip from './components/SlideStrip.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import InstallButton from './components/InstallButton.jsx'
 import PrintOrderDialog from './components/PrintOrderDialog.jsx'
+import { UPDATE_EVENT } from './lib/updates.js'
 
 export default function App() {
-  const { project, message, rename, selectedItemId } = useProject()
+  const { project, message, notify, rename, selectedItemId } = useProject()
   const [tab, setTab] = useState('slides')
   const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 860)
   const [printOpen, setPrintOpen] = useState(false)
+
+  // Eine neue Version der App übernimmt gleich – kurz Bescheid geben,
+  // damit der automatische Neustart nicht aus dem Nichts kommt.
+  useEffect(() => {
+    const onUpdate = () => notify('Neue Version – die App lädt sich gleich neu.')
+    window.addEventListener(UPDATE_EVENT, onUpdate)
+    return () => window.removeEventListener(UPDATE_EVENT, onUpdate)
+  }, [notify])
 
   // Wird ein Element gewählt, direkt seine Einstellungen zeigen.
   useEffect(() => {
