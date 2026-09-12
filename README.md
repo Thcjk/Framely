@@ -1,8 +1,9 @@
 # Framely
 
-Eine Progressive Web App, um eigene Fotos zu **Layouts und Collagen** anzuordnen, mit
-**Rahmen** zu versehen und anschliessend für **Instagram** oder den **Druck** zu
-exportieren.
+Ein **Magazin-Editor für Instagram-Carousels**. Fotostrecken als mehrseitige
+Bildstrecken gestalten – asymmetrische Layouts, echte Typografie, Ecken-Marken wie
+`01/10`, Credits-Zeilen – und anschliessend für Instagram exportieren oder als
+Druckdatei ausgeben.
 
 Framely läuft vollständig im Browser: kein Server, kein Konto, kein Upload. Die Fotos
 bleiben auf dem Gerät und werden lokal per Canvas verarbeitet. Die App ist auf Desktop
@@ -12,17 +13,68 @@ und Smartphone installierbar und funktioniert danach auch offline.
 
 ## Funktionen
 
-| Bereich | Was geht |
+### Multi-Slide-Editor (Kernstück)
+
+Ein Projekt ist ein Carousel aus beliebig vielen Slides. Jede Slide ist frei gestaltbar:
+
+- **21 Vorlagen** als Startpunkt, in vier Gruppen:
+  *Bild* (Vollbild, Bild mit Rand, Hochformat zentriert) ·
+  *Split* (Vollbild neben Weissfläche – links, rechts, oben) ·
+  *Mehrere* (Gross + klein, Überlappend, Zwei ungleich, Drei in Reihe, Drei versetzt,
+  Streifen, Kontaktbogen 6 und 9) ·
+  *Typo* (Cover mit Display-Schrift, Cover mit Bild, Text + Bild, Bild + Zitat,
+  dunkle Infoseite, Schluss/Credits, leere Fläche)
+- **Freie Platzierung**: jedes Element lässt sich ziehen, an den Ecken skalieren und
+  stapeln (nach vorne / nach hinten). Mit den Pfeiltasten pixelgenau, mit Shift gröber.
+- **Bildausschnitt** je Bild: verschieben (Modus *Ausschnitt* oder Alt-Taste),
+  zoomen (Mausrad, zwei Finger, Regler), in 90°-Schritten drehen.
+- **Textelemente** mit acht typografischen Rollen (Display, Titel, Titel Serif, Zitat,
+  Label, Fliesstext, Credits, Ecken-Marke) – Grösse, Laufweite, Ausrichtung, Versalien,
+  Schriftart und Farbe einstellbar. Textfarbe stellt sich automatisch auf den
+  Hintergrund ein (heller Text auf dunklen Slides).
+- **Automatische Inhalte**: ein Textelement kann Seitenzahl (`01/10`, `1/10` oder `01`),
+  Credits, Serienname, Website, Ort oder Datum anzeigen. Diese Angaben stehen einmal
+  im Panel *Serie* und aktualisieren sich überall.
+- **Farbflächen** als eigenes Element – für Halb/Halb-Layouts.
+- **Hintergrund je Slide**, inklusive Schwarz und gebrochenem Weiss.
+- **Panorama**: ein breites Bild als durchgehender Streifen über mehrere Slides
+  verteilen – beim Durchwischen im Feed entsteht ein fortlaufendes Bild. Die nötige
+  Anzahl Slides schlägt Framely aus dem Seitenverhältnis vor.
+- Bewusst **keine Animationen**: Framely baut Slides, es spielt sie nicht ab.
+
+### Bilder
+
+- Import per Drag & Drop oder Dateiauswahl; Fotos lassen sich direkt auf eine Stelle
+  der Slide ziehen.
+- **Adobe Lightroom** (optional, siehe unten).
+- Bibliothek im Browser gespeichert, sehr grosse Bilder werden auf 5000 px verkleinert.
+
+### Rahmen
+
+Ohne Rahmen · weisser Rand · Passepartout · Polaroid · Konturlinie – **pro Bild**
+einstellbar (Breite, Rahmenfarbe, Linienfarbe), weil im Magazin-Layout oft ein Bild
+randlos läuft und ein anderes einen weissen Rand trägt. Ein Klick überträgt den
+Rahmen auf alle Bilder.
+
+### Format, Druck und Export
+
+| | |
 | --- | --- |
-| **Bilder** | Import per Drag & Drop oder Dateiauswahl, Bibliothek im Browser gespeichert |
-| **Layout** | 12 Vorlagen (2er-/3er-/4er-Splits, 6er- und 9er-Raster, Filmstreifen) sowie ein freies Layout mit verschiebbaren und skalierbaren Zellen |
-| **Bildbearbeitung** | Verschieben, Zoomen (Mausrad, zwei Finger, Tasten), Drehen in 90°-Schritten, Bilder zwischen Plätzen tauschen |
-| **Format** | Instagram-Verhältnisse (1:1, 4:5, 9:16, 1.91:1, 3:2, 2:3) und Druckformate (10×15 bis 70×100, A4, A3) in Hoch- und Querformat |
-| **Rahmen** | Ohne Rahmen, weisser Rand, Passepartout, Polaroid, Konturlinie – mit einstellbarer Breite, Abstand und Farben |
-| **Druckprüfung** | Effektive Auflösung je Bild in dpi, Warnung wenn sie für das gewählte Format zu niedrig ist |
-| **Export** | JPG, PNG und PDF; für Social in 1080/1440/2048 px, für Druck in 150/300/600 dpi |
-| **Speicherung** | Projekte und Bilder liegen dauerhaft in der IndexedDB des Browsers, automatisch gespeichert |
-| **PWA** | Installierbar (Manifest + Icons), offline nutzbar (Service Worker) |
+| **Instagram** | 4:5 (Carousel), 1:1, 9:16 |
+| **Druck** | 10×15 bis 70×100, A4, A3 – hoch und quer |
+| **Auflösungsprüfung** | effektive dpi je Bild, dreistufige Warnung |
+| **Export** | ganzes Carousel oder einzelne Slide, als JPG, PNG oder mehrseitiges PDF |
+| **Auflösung** | 1080 / 1440 / 2048 px für Social, 150 / 300 / 600 dpi für Druck |
+
+Beim Export des ganzen Carousels entsteht eine nummerierte Datei je Slide
+(`serie-01.jpg`, `serie-02.jpg`, …) – in genau der Reihenfolge, in der sie bei
+Instagram hochgeladen werden.
+
+### Speicherung und PWA
+
+Projekte und Bilder liegen dauerhaft in der IndexedDB des Browsers und werden
+automatisch gespeichert. Manifest, Icons und Service Worker machen Framely
+installierbar und offline nutzbar.
 
 ---
 
@@ -45,17 +97,13 @@ npm run icons    # App-Icons neu erzeugen (public/icons/*)
 
 ## Deployment auf GitHub Pages
 
-Das Repository enthält den Workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
-Er baut die App bei jedem Push auf `main` und veröffentlicht sie auf GitHub Pages.
+Der Workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) baut die App
+bei jedem Push auf `main` und veröffentlicht sie auf GitHub Pages.
 
 **Einmalig einrichten:** *Settings → Pages → Build and deployment → Source:* **GitHub Actions**.
-
-Danach ist die App erreichbar unter `https://<benutzername>.github.io/<repository>/`.
-
-Der Pfad muss beim Build bekannt sein, weil alle Dateien relativ dazu geladen werden.
-Der Workflow setzt dafür `BASE_PATH` automatisch auf den Repository-Namen
-(siehe [`vite.config.js`](vite.config.js)). Für eine eigene Domain genügt
-`BASE_PATH=/ npm run build`.
+Der Workflow setzt `BASE_PATH` automatisch auf den Repository-Namen, weil GitHub Pages
+unter `https://<benutzername>.github.io/<repository>/` ausliefert. Für eine eigene Domain
+genügt `BASE_PATH=/ npm run build`.
 
 ---
 
@@ -64,77 +112,97 @@ Der Workflow setzt dafür `BASE_PATH` automatisch auf den Repository-Namen
 ```
 src/
 ├── main.jsx                 Einstiegspunkt, Service-Worker-Registrierung
-├── App.jsx                  Gerüst: Kopfzeile, Arbeitsfläche, Seitenleiste, Dialoge
+├── App.jsx                  Gerüst: Kopfzeile, Arbeitsfläche, Slide-Leiste, Panels
 ├── state/
 │   └── ProjectContext.jsx   Gesamter App-Zustand + alle Aktionen (React Context)
 ├── components/
-│   ├── Stage.jsx            Leinwand mit Maus-/Finger-Bedienung
-│   ├── Sidebar.jsx          Reiter-Navigation
+│   ├── Stage.jsx            Leinwand: Elemente ziehen, skalieren, Ausschnitt wählen
+│   ├── SlideStrip.jsx       Die Slides des Carousels als Vorschau-Leiste
+│   ├── LightroomSection.jsx Adobe-Anbindung (optional)
 │   ├── DpiNotice.jsx        Auflösungsprüfung für den Druck
 │   ├── PrintOrderDialog.jsx Weg zur Druckbestellung
-│   └── panels/              Bilder, Layout, Format, Rahmen, Export, Projekte
+│   └── panels/              Slide, Element, Bilder, Serie, Format, Export, Projekte
 └── lib/
-    ├── render.js            ► Herzstück: zeichnet ein Projekt auf eine Canvas
-    ├── layouts.js           Vorlagen als relative Rechtecke (0..1)
-    ├── frames.js            Rahmenstile und ihre Standardwerte
+    ├── render.js            ► Herzstück: zeichnet eine Slide auf eine Canvas
+    ├── slides.js            Vorlagen, Elementtypen, typografische Rollen
+    ├── text.js              Textsatz: Umbruch, Laufweite, Ausrichtung, Kontrastfarbe
+    ├── project.js           Datenmodell, Slide-Verwaltung, Panorama
+    ├── frames.js            Rahmenstile (pro Bild)
     ├── formats.js           Seitenverhältnisse, Druckformate, Pixelberechnung
-    ├── project.js           Datenmodell eines Projekts
+    ├── interact.js          Treffer-Erkennung, Verschieben, Skalieren, Zoomen
     ├── images.js            Import, Verkleinerung, Bild-Cache
     ├── db.js                IndexedDB (Projekte + Bilder)
-    ├── interact.js          Treffer-Erkennung, Zoomen, Verschieben
     ├── export.js            JPG/PNG/PDF erzeugen und herunterladen
-    ├── pdf.js               minimaler PDF-Schreiber (ohne Bibliothek)
+    ├── pdf.js               mehrseitiger PDF-Schreiber (ohne Bibliothek)
+    ├── lightroom.js         OAuth 2.0 mit PKCE + Lightroom-API
     └── printServices.js     Druckanbieter und Datei-Spezifikation
 ```
 
-### Zwei Ideen, die alles zusammenhalten
+### Drei Ideen, die alles zusammenhalten
 
-**1. Alles ist relativ.** Ein Layout besteht aus Rechtecken zwischen 0 und 1, Rahmenbreiten
-sind Prozente der kürzeren Kante. Dadurch ist eine Gestaltung unabhängig von der
-Pixelgrösse.
+**1. Alles ist relativ.** Jedes Element ist ein Rechteck zwischen 0 und 1, Schriftgrössen
+und Rahmenbreiten sind Anteile der kürzeren Slide-Kante. Dadurch ist eine Gestaltung
+unabhängig von der Pixelgrösse – dieselbe Slide funktioniert in 1080 px und in 300 dpi.
 
-**2. Nur eine Zeichenfunktion.** `renderProject()` in `lib/render.js` zeichnet die
-Bildschirmvorschau *und* den Export – nur auf unterschiedlich grosse Leinwände. Was man
-sieht, ist exakt das, was exportiert wird. Wer das Aussehen ändern will, ändert genau
-diese eine Funktion.
+**2. Nur eine Zeichenfunktion.** `renderSlide()` in `lib/render.js` zeichnet die
+Arbeitsfläche, die Vorschaubilder der Slide-Leiste *und* den Export. Was man sieht, ist
+exakt das, was exportiert wird. Wer das Aussehen ändern will, ändert genau diese
+eine Funktion.
+
+**3. Angaben stehen an einer Stelle.** Seitenzahlen und Credits sind keine abgetippten
+Texte, sondern Textelemente mit automatischem Inhalt. Wird eine Slide verschoben oder
+gelöscht, stimmen die Nummern weiterhin.
+
+---
+
+## Adobe Lightroom
+
+Framely kann Fotos direkt aus der Lightroom-Bibliothek holen – mit einer wichtigen
+Einschränkung, die vor dem Ausprobieren bekannt sein sollte:
+
+**Die Lightroom-API ist eine Partner-API.** Adobe gibt sie nur für freigeschaltete
+Integrationen frei (Scopes `lr_partner_apis` und `lr_partner_rendition_apis`), sämtliche
+offiziellen Beispiele laufen serverseitig, und CORS für direkte Browser-Aufrufe sichert
+Adobe nirgends zu.
+
+Umgesetzt ist deshalb der Weg, den Adobe für Single-Page-Apps vorsieht:
+**OAuth 2.0 Authorization Code Flow mit PKCE**, ganz ohne Server und ohne Client-Secret.
+Im Panel *Bilder → Adobe Lightroom* trägt man die eigene Client-ID aus der
+[Adobe Developer Console](https://developer.adobe.com/console) ein (als Redirect-URI die
+Adresse der App), meldet sich an und lädt seine Fotos.
+
+Verweigert Adobe den Zugriff (fehlende Freigabe → HTTP 403) oder blockt CORS, sagt die
+App genau das – der lokale Import bleibt davon unberührt und ist der zuverlässige Weg.
 
 ---
 
 ## Warum keine Bestellung direkt in der App?
 
-Der ursprüngliche Wunsch war ein Direkt-Checkout bei einem Print-on-Demand-Dienst. Bei der
-Umsetzung geprüft: **Prodigi**, **Printful**, **Gelato** und vergleichbare Anbieter
-verlangen für eine Bestellung einen geheimen API-Schlüssel im Anfrage-Header und erwarten
-das Druckbild als **öffentlich erreichbare URL**.
+Geprüft: **Prodigi**, **Printful**, **Gelato** und vergleichbare Anbieter verlangen für
+eine Bestellung einen geheimen API-Schlüssel im Anfrage-Header und erwarten das Druckbild
+als öffentlich erreichbare URL. Beides ist mit einer reinen Frontend-App auf GitHub Pages
+nicht sicher möglich – ein API-Schlüssel im JavaScript-Bundle wäre für jede Besucherin
+lesbar. Ein embeddable Checkout ohne eigenen Server bietet keiner der geprüften Dienste.
 
-Beides ist mit einer reinen Frontend-App auf GitHub Pages nicht sicher möglich: Ein
-API-Schlüssel im JavaScript-Bundle wäre für jede Besucherin lesbar und könnte für fremde
-Bestellungen missbraucht werden. Ein embeddable Checkout ohne eigenen Server bietet
-keiner der geprüften Dienste an.
-
-Deshalb der bewusst gewählte Weg (Fallback aus der Aufgabenstellung): Framely erzeugt die
-**fertige, korrekt dimensionierte Druckdatei** (JPG mit 300 dpi oder PDF in exakter
-Papiergrösse) und führt im Dialog *Druck bestellen* Schritt für Schritt zu ifolor, Saal
-Digital, WhiteWall, Pixum oder Prodigi – inklusive kopierbarer Angaben zu Format,
-Auflösung und Farbraum für das Upload-Formular.
-
-Sollte später ein kleines Backend dazukommen (z.B. eine Serverless-Funktion), lässt sich
-die Bestellung in `lib/printServices.js` ergänzen, ohne den Editor anzufassen.
+Deshalb der bewusst gewählte Weg: Framely erzeugt die **fertige, korrekt dimensionierte
+Druckdatei** (JPG mit 300 dpi oder PDF in exakter Papiergrösse) und führt im Dialog
+*Druck bestellen* Schritt für Schritt zu ifolor, Saal Digital, WhiteWall, Pixum oder
+Prodigi – inklusive kopierbarer Angaben zu Format, Auflösung und Farbraum.
 
 ---
 
 ## Datenschutz
 
 Alle Bilder und Projekte bleiben im Browser (IndexedDB). Es gibt keine Analyse, kein
-Tracking und keine Netzwerkanfragen ausser dem Laden der App selbst. Werden die
-Browserdaten dieser Seite gelöscht, sind auch die Projekte weg – wichtige Layouts also
-exportieren.
+Tracking und keine Netzwerkanfragen ausser dem Laden der App selbst – und, falls man das
+aktiv einrichtet, der Verbindung zu Adobe. Werden die Browserdaten dieser Seite gelöscht,
+sind auch die Projekte weg; wichtige Serien also exportieren.
 
 ## Technik
 
 React 18, Vite 5, `vite-plugin-pwa` (Workbox). Keine weiteren Laufzeit-Abhängigkeiten –
-Canvas-Rendering, PDF-Erzeugung und Datenbank sind im Projekt selbst umgesetzt und
-kommentiert.
+Canvas-Rendering, Textsatz, PDF-Erzeugung, Datenbank und OAuth sind im Projekt selbst
+umgesetzt und kommentiert.
 
 ## Lizenz
 

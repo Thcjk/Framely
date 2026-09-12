@@ -1,19 +1,21 @@
 /**
  * Seitenleiste mit den Werkzeug-Panels.
- * Auf dem Desktop links, auf dem Smartphone als Leiste unten.
+ * Auf dem Desktop rechts, auf dem Smartphone als aufklappbare Leiste unten.
  */
 import ImagesPanel from './panels/ImagesPanel.jsx'
+import SlidesPanel from './panels/SlidesPanel.jsx'
+import ElementPanel from './panels/ElementPanel.jsx'
+import SeriesPanel from './panels/SeriesPanel.jsx'
 import FormatPanel from './panels/FormatPanel.jsx'
-import LayoutPanel from './panels/LayoutPanel.jsx'
-import FramePanel from './panels/FramePanel.jsx'
 import ExportPanel from './panels/ExportPanel.jsx'
 import ProjectsPanel from './panels/ProjectsPanel.jsx'
 
 export const TABS = [
+  { id: 'slides', label: 'Slide' },
+  { id: 'element', label: 'Element' },
   { id: 'images', label: 'Bilder' },
-  { id: 'layout', label: 'Layout' },
+  { id: 'series', label: 'Serie' },
   { id: 'format', label: 'Format' },
-  { id: 'frame', label: 'Rahmen' },
   { id: 'export', label: 'Export' },
   { id: 'projects', label: 'Projekte' },
 ]
@@ -43,10 +45,11 @@ export default function Sidebar({ tab, onTab, open, onToggle, onOrderPrint }) {
       </nav>
 
       <div className="sidebar__body">
+        {tab === 'slides' && <SlidesPanel />}
+        {tab === 'element' && <ElementPanel />}
         {tab === 'images' && <ImagesPanel />}
-        {tab === 'layout' && <LayoutPanel />}
+        {tab === 'series' && <SeriesPanel />}
         {tab === 'format' && <FormatPanel />}
-        {tab === 'frame' && <FramePanel />}
         {tab === 'export' && <ExportPanel onOrderPrint={onOrderPrint} />}
         {tab === 'projects' && <ProjectsPanel />}
       </div>

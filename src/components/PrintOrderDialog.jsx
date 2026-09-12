@@ -7,13 +7,14 @@
 import { useState } from 'react'
 import { useProject } from '../state/ProjectContext.jsx'
 import { PRINT_SERVICES, printSpec } from '../lib/printServices.js'
-import { exportProject, download } from '../lib/export.js'
+import { exportProject, downloadAll } from '../lib/export.js'
 import { outputPixels, resolveFormat } from '../lib/formats.js'
 import DpiNotice from './DpiNotice.jsx'
 
 export default function PrintOrderDialog({ onClose }) {
-  const { project, images, notify } = useProject()
+  const { project, slide, images, notify } = useProject()
   const [dpi] = useState(300)
+  const [scope, setScope] = useState('current')
   const [running, setRunning] = useState(false)
   const format = resolveFormat(project)
   const pixels = outputPixels(project, { dpi })
@@ -30,9 +31,15 @@ export default function PrintOrderDialog({ onClose }) {
   const createFile = async (type) => {
     setRunning(true)
     try {
-      const result = await exportProject(project, images, { type, dpi, quality: 0.95 })
-      download(result.blob, result.filename)
-      notify(`Druckdatei ${result.filename} erstellt.`)
+      const result = await exportProject(project, images, {
+        type,
+        scope,
+        slideId: slide.id,
+        dpi,
+        quality: 0.95,
+      })
+      await downloadAll(result.files)
+      notify(`${result.files.length} Druckdatei(en) erstellt.`)
     } catch (error) {
       console.error(error)
       notify('Die Druckdatei konnte nicht erzeugt werden.')
@@ -66,6 +73,14 @@ export default function PrintOrderDialog({ onClose }) {
                 {format.label} · {format.widthMm} × {format.heightMm} mm ·{' '}
                 {pixels.width} × {pixels.height} px bei {dpi} dpi
               </p>
+              <div className="segmented segmented--small">
+                <button type="button" className={scope === 'current' ? 'is-active' : ''} onClick={() => setScope('current')}>
+                  Diese Slide
+                </button>
+                <button type="button" className={scope === 'all' ? 'is-active' : ''} onClick={() => setScope('all')}>
+                  Alle Slides
+                </button>
+              </div>
               <div className="row">
                 <button
                   type="button"

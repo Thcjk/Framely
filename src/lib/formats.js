@@ -10,12 +10,9 @@
  */
 
 export const SOCIAL_FORMATS = [
+  { id: 'portrait45', label: 'Hochformat', sub: '4:5 · Carousel', ratio: 4 / 5, px: 1440 },
   { id: 'square', label: 'Quadrat', sub: '1:1 · Feed', ratio: 1, px: 1440 },
-  { id: 'portrait45', label: 'Hochformat', sub: '4:5 · Feed', ratio: 4 / 5, px: 1440 },
   { id: 'story', label: 'Story / Reel', sub: '9:16', ratio: 9 / 16, px: 1440 },
-  { id: 'landscape', label: 'Querformat', sub: '1.91:1', ratio: 1.91, px: 1440 },
-  { id: 'photo32', label: 'Foto', sub: '3:2', ratio: 3 / 2, px: 1440 },
-  { id: 'photo23', label: 'Foto hoch', sub: '2:3', ratio: 2 / 3, px: 1440 },
 ]
 
 /** Druckformate in Millimetern (Hochformat-Notation: w < h). */

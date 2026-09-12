@@ -2,21 +2,10 @@
 import { useProject } from '../../state/ProjectContext.jsx'
 
 export default function ProjectsPanel() {
-  const { projects, project, openProject, duplicateProject, removeProject, newProject, rename } =
-    useProject()
+  const { projects, project, openProject, duplicateProject, removeProject, newProject } = useProject()
 
   return (
     <div className="panel">
-      <label className="field">
-        <span className="label">Name des Projekts</span>
-        <input
-          type="text"
-          value={project.name}
-          onChange={(e) => rename(e.target.value)}
-          className="input"
-        />
-      </label>
-
       <button type="button" className="btn btn--primary" onClick={newProject}>
         Neues Projekt
       </button>
@@ -28,7 +17,9 @@ export default function ProjectsPanel() {
             <div className={`project${item.id === project.id ? ' is-active' : ''}`}>
               <button type="button" className="project__open" onClick={() => openProject(item.id)}>
                 <strong>{item.name}</strong>
-                <small>{new Date(item.updatedAt).toLocaleString('de-CH')}</small>
+                <small>
+                  {item.slideCount} Slides · {new Date(item.updatedAt).toLocaleString('de-CH')}
+                </small>
               </button>
               <div className="project__actions">
                 <button type="button" onClick={() => duplicateProject(item.id)} title="Duplizieren">

@@ -9,7 +9,7 @@
  */
 
 import { saveImage, loadImage } from './db.js'
-import { uid } from './project.js'
+import { uid, usedImageIds } from './project.js'
 
 /** Obergrenze der langen Kante. 5000 px reichen für 300 dpi auf ~42 cm. */
 const MAX_EDGE = 5000
@@ -46,6 +46,39 @@ async function downscaleIfNeeded(img, type) {
     canvas.toBlob(r, type === 'image/png' ? 'image/png' : 'image/jpeg', 0.92),
   )
   return blob
+}
+
+/**
+ * Importiert einen einzelnen Blob (z.B. ein Rendition aus Lightroom).
+ * @returns {Promise<{id:string,name:string,width:number,height:number}>}
+ */
+export async function importBlob(blob, name = 'Foto') {
+  const { img, url } = await loadElementFromBlob(blob)
+  const smaller = await downscaleIfNeeded(img, blob.type)
+
+  let stored = blob
+  let element = img
+  let elementUrl = url
+  if (smaller) {
+    URL.revokeObjectURL(url)
+    stored = smaller
+    const reloaded = await loadElementFromBlob(smaller)
+    element = reloaded.img
+    elementUrl = reloaded.url
+  }
+
+  const record = {
+    id: uid(),
+    blob: stored,
+    name,
+    width: element.naturalWidth,
+    height: element.naturalHeight,
+    createdAt: Date.now(),
+  }
+  await saveImage(record)
+  cache.set(record.id, element)
+  objectUrls.set(record.id, elementUrl)
+  return { id: record.id, name, width: record.width, height: record.height }
 }
 
 /**
@@ -105,7 +138,7 @@ export async function getImage(id) {
 
 /** Lädt alle Bilder eines Projekts und gibt eine Map id -> <img> zurück. */
 export async function loadProjectImages(project) {
-  const ids = [...new Set(project.slots.map((s) => s.imageId).filter(Boolean))]
+  const ids = usedImageIds(project)
   const entries = await Promise.all(
     ids.map(async (id) => [id, await getImage(id)]),
   )

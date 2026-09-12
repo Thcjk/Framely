@@ -1,19 +1,24 @@
 /**
- * App-Gerüst: Kopfzeile, Arbeitsfläche, Seitenleiste, Dialoge.
+ * App-Gerüst: Kopfzeile, Slide-Leiste, Arbeitsfläche, Seitenleiste, Dialoge.
  */
 import { useEffect, useState } from 'react'
 import { useProject } from './state/ProjectContext.jsx'
 import Stage from './components/Stage.jsx'
+import SlideStrip from './components/SlideStrip.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import InstallButton from './components/InstallButton.jsx'
 import PrintOrderDialog from './components/PrintOrderDialog.jsx'
 
 export default function App() {
-  const { project, message, rename } = useProject()
-  const [tab, setTab] = useState('images')
-  // Auf schmalen Bildschirmen startet die Leiste eingeklappt.
+  const { project, message, rename, selectedItemId } = useProject()
+  const [tab, setTab] = useState('slides')
   const [panelOpen, setPanelOpen] = useState(() => window.innerWidth > 860)
   const [printOpen, setPrintOpen] = useState(false)
+
+  // Wird ein Element gewählt, direkt seine Einstellungen zeigen.
+  useEffect(() => {
+    if (selectedItemId) setTab('element')
+  }, [selectedItemId])
 
   // Browser-Standard beim Fallenlassen von Dateien unterbinden
   // (sonst öffnet der Browser das Bild einfach in einem neuen Tab).
@@ -66,7 +71,10 @@ export default function App() {
       </header>
 
       <main className="main">
-        <Stage />
+        <div className="workspace">
+          <Stage />
+          <SlideStrip />
+        </div>
         <Sidebar
           tab={tab}
           onTab={setTab}

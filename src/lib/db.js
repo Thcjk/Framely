@@ -74,7 +74,11 @@ export const deleteImage = (id) => tx(STORE_IMAGES, 'readwrite', (s) => s.delete
 export async function pruneImages() {
   const [projects, images] = await Promise.all([listProjects(), listImages()])
   const used = new Set()
-  projects.forEach((p) => p.slots.forEach((s) => s.imageId && used.add(s.imageId)))
+  projects.forEach((project) =>
+    (project.slides ?? []).forEach((slide) =>
+      (slide.items ?? []).forEach((item) => item.imageId && used.add(item.imageId)),
+    ),
+  )
   const orphans = images.filter((img) => !used.has(img.id))
   await Promise.all(orphans.map((img) => deleteImage(img.id)))
   return orphans.length

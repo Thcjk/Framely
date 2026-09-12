@@ -1,22 +1,19 @@
-/** Panel „Bilder“: Import per Drag & Drop oder Dateiauswahl. */
+/** Panel „Bilder“: lokaler Import, Bibliothek, Panorama und Lightroom. */
 import { useRef, useState } from 'react'
 import { useProject } from '../../state/ProjectContext.jsx'
 import Thumb from '../Thumb.jsx'
+import LightroomSection from '../LightroomSection.jsx'
 
 export default function ImagesPanel() {
-  const { library, addFiles, assignImage, selectedSlotId, project, busy, notify } = useProject()
+  const { library, addFiles, placeImageId, busy, makePanorama, suggestPanorama, notify } = useProject()
   const inputRef = useRef(null)
   const [over, setOver] = useState(false)
+  const [panoramaFor, setPanoramaFor] = useState(null)
+  const [count, setCount] = useState(3)
 
-  /** Klick auf ein Bild: in den gewählten oder ersten freien Platz setzen. */
-  const place = (imageId) => {
-    const target =
-      project.slots.find((s) => s.id === selectedSlotId) ??
-      project.slots.find((s) => !s.imageId) ??
-      project.slots[0]
-    if (!target) return
-    assignImage(target.id, imageId)
-    notify('Bild platziert.')
+  const openPanorama = (imageId) => {
+    setPanoramaFor(imageId)
+    setCount(suggestPanorama(imageId))
   }
 
   return (
@@ -70,7 +67,11 @@ export default function ImagesPanel() {
                 title={`${image.name} · ${image.width} × ${image.height} px`}
                 draggable
                 onDragStart={(e) => e.dataTransfer.setData('text/framely-image', image.id)}
-                onClick={() => place(image.id)}
+                onClick={() => {
+                  placeImageId(image.id)
+                  notify('Bild platziert.')
+                }}
+                onDoubleClick={() => openPanorama(image.id)}
               >
                 <Thumb imageId={image.id} alt={image.name} />
               </button>
@@ -78,10 +79,49 @@ export default function ImagesPanel() {
           ))}
         </ul>
       )}
+
       <p className="note">
-        Tipp: Ein Bild aus der Bibliothek lässt sich direkt auf eine Zelle der Arbeitsfläche
-        ziehen.
+        Klick platziert das Bild im gewählten Element, Ziehen legt es direkt auf eine Stelle der
+        Slide. Doppelklick öffnet das Panorama.
       </p>
+
+      {panoramaFor && (
+        <div className="inset-card">
+          <h4 className="label">Panorama über mehrere Slides</h4>
+          <p className="note">
+            Das Bild läuft als durchgehender Streifen über mehrere Slides – beim Durchwischen im
+            Feed entsteht ein fortlaufendes Bild.
+          </p>
+          <label className="field">
+            <span className="label">Anzahl Slides · {count}</span>
+            <input
+              type="range"
+              min="2"
+              max="8"
+              step="1"
+              value={count}
+              onChange={(e) => setCount(Number(e.target.value))}
+            />
+          </label>
+          <div className="row">
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => {
+                makePanorama(panoramaFor, count)
+                setPanoramaFor(null)
+              }}
+            >
+              Panorama anlegen
+            </button>
+            <button type="button" className="btn btn--ghost" onClick={() => setPanoramaFor(null)}>
+              Abbrechen
+            </button>
+          </div>
+        </div>
+      )}
+
+      <LightroomSection />
     </div>
   )
 }

@@ -1,85 +1,58 @@
 /**
  * Der Renderer.
  *
- * Es gibt bewusst nur EINE Zeichenfunktion: `renderProject`. Sie wird sowohl
- * für die Bildschirmvorschau als auch für den Export in voller Auflösung
- * benutzt. Weil alle Masse relativ zur Leinwandgrösse berechnet werden,
- * sieht der Export exakt so aus wie die Vorschau (WYSIWYG).
+ * Es gibt bewusst nur EINE Zeichenfunktion: `renderSlide`. Sie wird für die
+ * Bildschirmvorschau und für den Export in voller Auflösung benutzt. Weil
+ * alle Masse relativ zur Leinwandgrösse sind, sieht der Export exakt so aus
+ * wie die Vorschau (WYSIWYG).
  */
 
-import { getLayout } from './layouts.js'
 import { MM_PER_INCH } from './formats.js'
+import { itemFrame } from './frames.js'
+import { drawText, resolveStyle, resolveText, contrastColor } from './text.js'
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v))
 
-/** Die Zellen-Rechtecke (0..1) eines Projekts – aus der Vorlage oder frei gesetzt. */
-export function projectCells(project) {
-  const layout = getLayout(project.layoutId)
-  return project.slots.map((slot, i) => {
-    if (layout.freeform && slot.rect) return slot.rect
-    return layout.cells[i] ?? layout.cells[layout.cells.length - 1]
-  })
-}
+/** Relatives Rechteck (0..1) in Pixel umrechnen. */
+export const toPixels = (r, W, H) => ({ x: r.x * W, y: r.y * H, w: r.w * W, h: r.h * H })
 
 /**
- * Rechnet die relativen Zellen in Pixel-Rechtecke um und berücksichtigt
- * Aussenrand (border) und Abstand (gap).
+ * Das Foto-Rechteck innerhalb eines Bild-Elements.
+ * Der Rahmen frisst Platz von aussen nach innen; beim Polaroid unten mehr.
  */
-export function geometry(project, W, H) {
-  const short = Math.min(W, H)
-  const border = (project.frame.border / 100) * short
-  const gap = (project.frame.gap / 100) * short
-  const contentW = Math.max(1, W - 2 * border)
-  const contentH = Math.max(1, H - 2 * border)
-
-  const cells = projectCells(project).map((c) => {
-    const x = border + c.x * contentW + gap / 2
-    const y = border + c.y * contentH + gap / 2
-    const w = Math.max(1, c.w * contentW - gap)
-    const h = Math.max(1, c.h * contentH - gap)
-    return { x, y, w, h }
-  })
-
-  return { cells, border, gap, short }
-}
-
-/** Beim Polaroid-Stil sitzt das Foto innerhalb der Karte – unten mit mehr Rand. */
-export function photoRect(cellRect, project, short) {
-  if (project.frame.styleId !== 'polaroid') return cellRect
-  const pad = Math.min(
-    (project.frame.border / 100) * short * 0.6,
-    Math.min(cellRect.w, cellRect.h) * 0.22,
-  )
-  const bottom = pad * 2.6
+export function photoRect(box, frame) {
+  const style = frame?.styleId ?? 'none'
+  if (style === 'none' || style === 'hairline' || !frame?.width) return box
+  const pad = Math.min((frame.width / 100) * Math.min(box.w, box.h), Math.min(box.w, box.h) * 0.45)
+  const bottom = style === 'polaroid' ? pad * 2.6 : pad
   return {
-    x: cellRect.x + pad,
-    y: cellRect.y + pad,
-    w: Math.max(1, cellRect.w - 2 * pad),
-    h: Math.max(1, cellRect.h - pad - bottom),
+    x: box.x + pad,
+    y: box.y + pad,
+    w: Math.max(1, box.w - 2 * pad),
+    h: Math.max(1, box.h - pad - bottom),
   }
 }
 
 /**
- * Berechnet, wie ein Bild in seiner Zelle liegt.
- * Grundlage ist "cover" (Zelle vollständig gefüllt); `zoom` vergrössert
- * zusätzlich, `offsetX/offsetY` verschieben (in Anteilen der Zellengrösse).
- * Die Verschiebung wird so begrenzt, dass nie ein leerer Rand entsteht.
+ * Berechnet, wie ein Bild in seinem Rechteck liegt.
+ * Grundlage ist "cover" (Rechteck vollständig gefüllt); `zoom` vergrössert
+ * zusätzlich, `offsetX/offsetY` verschieben (in Anteilen der Rechteckgrösse).
  */
-export function placeImage(image, rect, slot) {
-  const rotation = ((slot.rotation ?? 0) % 360 + 360) % 360
+export function placeImage(image, rect, item) {
+  const rotation = (((item.rotation ?? 0) % 360) + 360) % 360
   const swap = rotation === 90 || rotation === 270
   const iw = swap ? image.height : image.width
   const ih = swap ? image.width : image.height
 
   const cover = Math.max(rect.w / iw, rect.h / ih)
-  const scale = cover * (slot.zoom ?? 1)
+  const scale = cover * (item.zoom ?? 1)
   const dw = iw * scale
   const dh = ih * scale
 
   const maxX = Math.max(0, (dw - rect.w) / 2)
   const maxY = Math.max(0, (dh - rect.h) / 2)
-  const tx = clamp((slot.offsetX ?? 0) * rect.w, -maxX, maxX)
-  const ty = clamp((slot.offsetY ?? 0) * rect.h, -maxY, maxY)
+  const tx = clamp((item.offsetX ?? 0) * rect.w, -maxX, maxX)
+  const ty = clamp((item.offsetY ?? 0) * rect.h, -maxY, maxY)
 
   return {
     cx: rect.x + rect.w / 2 + tx,
@@ -93,60 +66,81 @@ export function placeImage(image, rect, slot) {
   }
 }
 
-/** Begrenzt offsetX/offsetY so, dass das Bild die Zelle immer ausfüllt. */
-export function clampOffsets(image, rect, slot) {
-  const p = placeImage(image, rect, slot)
+/** Begrenzt offsetX/offsetY so, dass das Bild sein Rechteck immer ausfüllt. */
+export function clampOffsets(image, rect, item) {
+  const p = placeImage(image, rect, item)
   const maxX = Math.max(0, (p.dw - rect.w) / 2) / rect.w
   const maxY = Math.max(0, (p.dh - rect.h) / 2) / rect.h
   return {
-    offsetX: clamp(slot.offsetX ?? 0, -maxX, maxX),
-    offsetY: clamp(slot.offsetY ?? 0, -maxY, maxY),
+    offsetX: clamp(item.offsetX ?? 0, -maxX, maxX),
+    offsetY: clamp(item.offsetY ?? 0, -maxY, maxY),
   }
 }
 
 /**
- * Zeichnet das komplette Projekt auf einen 2D-Context der Grösse W × H.
+ * Zeichnet eine Slide auf einen 2D-Context der Grösse W × H.
  *
  * @param {CanvasRenderingContext2D} ctx
- * @param {object} project
- * @param {Map<string, HTMLImageElement|ImageBitmap>} images  imageId -> geladenes Bild
- * @param {number} W
- * @param {number} H
- * @param {{placeholders?: boolean, selectedSlotId?: string|null}} options
+ * @param {object} options
+ * @param {object} options.project
+ * @param {object} options.slide
+ * @param {Map<string, HTMLImageElement>} options.images  imageId -> Bild
+ * @param {number} options.index  Position der Slide (für "01/10")
+ * @param {number} options.total
+ * @param {boolean} [options.placeholders]  leere Plätze andeuten (nur Vorschau)
+ * @param {string|null} [options.selectedItemId]
  */
-export function renderProject(ctx, project, images, W, H, options = {}) {
-  const { placeholders = false, selectedSlotId = null } = options
-  const { cells, short } = geometry(project, W, H)
-  const style = project.frame.styleId
+export function renderSlide(ctx, { project, slide, images, index, total, W, H, placeholders = false, selectedItemId = null }) {
+  const short = Math.min(W, H)
+  const ink = contrastColor(slide.background)
 
   ctx.save()
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
 
-  // 1. Hintergrund (ist gleichzeitig die Rahmenfarbe)
-  ctx.fillStyle = project.frame.background
+  // 1. Hintergrund der Slide
+  ctx.fillStyle = slide.background
   ctx.fillRect(0, 0, W, H)
 
-  project.slots.forEach((slot, i) => {
-    const cellRect = cells[i]
-    if (!cellRect) return
+  for (const item of slide.items) {
+    const box = toPixels(item.rect, W, H)
 
-    // 2. Polaroid-Karte
-    if (style === 'polaroid') {
-      ctx.fillStyle = project.frame.card
-      ctx.fillRect(cellRect.x, cellRect.y, cellRect.w, cellRect.h)
+    if (item.type === 'block') {
+      ctx.fillStyle = item.color
+      ctx.fillRect(box.x, box.y, box.w, box.h)
+      continue
     }
 
-    const rect = photoRect(cellRect, project, short)
-    const image = slot.imageId ? images.get(slot.imageId) : null
+    if (item.type === 'text') {
+      const style = resolveStyle(item)
+      drawText(ctx, {
+        text: resolveText(item, { project, index, total }),
+        rect: box,
+        style,
+        color: item.color ?? ink,
+        short,
+      })
+      if (placeholders && item.id === selectedItemId) outline(ctx, box, short, '#111111')
+      continue
+    }
 
-    // 3. Foto (auf die Zelle beschnitten)
+    // --- Bild ---
+    const frame = itemFrame(item, project)
+    const photo = photoRect(box, frame)
+    const image = item.imageId ? images.get(item.imageId) : null
+
+    // Rahmenfläche (weisser Rand / Passepartout / Polaroid)
+    if (frame.styleId !== 'none' && frame.styleId !== 'hairline' && frame.width > 0) {
+      ctx.fillStyle = frame.color
+      ctx.fillRect(box.x, box.y, box.w, box.h)
+    }
+
     if (image) {
       ctx.save()
       ctx.beginPath()
-      ctx.rect(rect.x, rect.y, rect.w, rect.h)
+      ctx.rect(photo.x, photo.y, photo.w, photo.h)
       ctx.clip()
-      const p = placeImage(image, rect, slot)
+      const p = placeImage(image, photo, item)
       ctx.translate(p.cx, p.cy)
       if (p.rotation) ctx.rotate((p.rotation * Math.PI) / 180)
       const drawW = p.swap ? p.dh : p.dw
@@ -154,75 +148,71 @@ export function renderProject(ctx, project, images, W, H, options = {}) {
       ctx.drawImage(image, -drawW / 2, -drawH / 2, drawW, drawH)
       ctx.restore()
     } else if (placeholders) {
-      // Leere Zelle nur in der Vorschau andeuten – nie im Export.
-      ctx.fillStyle = '#f2f2f0'
-      ctx.fillRect(rect.x, rect.y, rect.w, rect.h)
-      ctx.strokeStyle = '#d4d4d0'
-      ctx.lineWidth = Math.max(1, short * 0.002)
+      // Leerer Bildplatz – nur in der Vorschau, nie im Export.
+      ctx.fillStyle = 'rgba(128,128,128,.12)'
+      ctx.fillRect(photo.x, photo.y, photo.w, photo.h)
+      ctx.strokeStyle = 'rgba(128,128,128,.5)'
+      ctx.lineWidth = Math.max(1, short * 0.0018)
       ctx.setLineDash([short * 0.012, short * 0.012])
-      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h)
+      ctx.strokeRect(photo.x, photo.y, photo.w, photo.h)
       ctx.setLineDash([])
-      const s = Math.min(rect.w, rect.h) * 0.1
-      ctx.strokeStyle = '#a8a8a2'
-      ctx.lineWidth = Math.max(1, short * 0.003)
+      const s = Math.min(photo.w, photo.h) * 0.12
       ctx.beginPath()
-      ctx.moveTo(rect.x + rect.w / 2 - s / 2, rect.y + rect.h / 2)
-      ctx.lineTo(rect.x + rect.w / 2 + s / 2, rect.y + rect.h / 2)
-      ctx.moveTo(rect.x + rect.w / 2, rect.y + rect.h / 2 - s / 2)
-      ctx.lineTo(rect.x + rect.w / 2, rect.y + rect.h / 2 + s / 2)
+      ctx.moveTo(photo.x + photo.w / 2 - s / 2, photo.y + photo.h / 2)
+      ctx.lineTo(photo.x + photo.w / 2 + s / 2, photo.y + photo.h / 2)
+      ctx.moveTo(photo.x + photo.w / 2, photo.y + photo.h / 2 - s / 2)
+      ctx.lineTo(photo.x + photo.w / 2, photo.y + photo.h / 2 + s / 2)
       ctx.stroke()
     }
 
-    // 4. Linien der Rahmenstile
-    if (style === 'hairline') {
-      ctx.strokeStyle = project.frame.line
+    // Linien der Rahmenstile
+    if (frame.styleId === 'hairline') {
+      ctx.strokeStyle = frame.line
       ctx.lineWidth = Math.max(1, short * 0.0022)
-      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h)
+      ctx.strokeRect(photo.x, photo.y, photo.w, photo.h)
     }
-    if (style === 'passepartout') {
-      const o = Math.max(2, (project.frame.border / 100) * short * 0.22)
-      ctx.strokeStyle = project.frame.line
+    if (frame.styleId === 'passepartout') {
+      const o = Math.max(2, (frame.width / 100) * Math.min(box.w, box.h) * 0.22)
+      ctx.strokeStyle = frame.line
       ctx.lineWidth = Math.max(1, short * 0.0015)
-      ctx.strokeRect(rect.x - o, rect.y - o, rect.w + 2 * o, rect.h + 2 * o)
+      ctx.strokeRect(photo.x - o, photo.y - o, photo.w + 2 * o, photo.h + 2 * o)
     }
 
-    // 5. Auswahl-Markierung (nur Vorschau)
-    if (placeholders && slot.id === selectedSlotId) {
-      ctx.strokeStyle = '#111111'
-      ctx.lineWidth = Math.max(1.5, short * 0.003)
-      ctx.strokeRect(
-        cellRect.x - ctx.lineWidth / 2,
-        cellRect.y - ctx.lineWidth / 2,
-        cellRect.w + ctx.lineWidth,
-        cellRect.h + ctx.lineWidth,
-      )
-    }
-  })
+    if (placeholders && item.id === selectedItemId) outline(ctx, box, short, '#111111')
+  }
 
   ctx.restore()
 }
 
+/** Auswahlrahmen (nur Vorschau). */
+function outline(ctx, box, short, color) {
+  ctx.save()
+  ctx.strokeStyle = color
+  ctx.lineWidth = Math.max(1.5, short * 0.0028)
+  ctx.setLineDash([short * 0.02, short * 0.014])
+  ctx.strokeRect(box.x, box.y, box.w, box.h)
+  ctx.restore()
+}
+
 /**
- * Effektive Auflösung je Zelle in DPI – Grundlage für die Druckwarnung.
- *
- * Das Ergebnis ist unabhängig von der Referenzgrösse der Leinwand: es zählt
- * nur, wie viele Quellpixel auf einen Millimeter Papier fallen.
- *
- * @returns {Array<{slotId:string, dpi:number|null}>}
+ * Effektive Auflösung je Bild in DPI – Grundlage für die Druckwarnung.
+ * Unabhängig von der Referenzgrösse: es zählt nur, wie viele Quellpixel
+ * auf einen Millimeter Papier fallen.
  */
-export function computeDpi(project, images, widthMm, heightMm) {
-  if (!widthMm || !heightMm) return project.slots.map((s) => ({ slotId: s.id, dpi: null }))
+export function computeDpi(project, slide, images, widthMm, heightMm) {
+  const results = []
+  if (!widthMm || !heightMm || !slide) return results
   const W = 1000
   const H = (W * heightMm) / widthMm
-  const { cells, short } = geometry(project, W, H)
 
-  return project.slots.map((slot, i) => {
-    const image = slot.imageId ? images.get(slot.imageId) : null
-    if (!image || !cells[i]) return { slotId: slot.id, dpi: null }
-    const rect = photoRect(cells[i], project, short)
-    const p = placeImage(image, rect, slot)
-    // density = Quellpixel pro Leinwand-Einheit; W Einheiten entsprechen widthMm.
+  slide.items.forEach((item) => {
+    if (item.type !== 'image') return
+    const image = item.imageId ? images.get(item.imageId) : null
+    if (!image) return
+    const photo = photoRect(toPixels(item.rect, W, H), itemFrame(item, project))
+    const p = placeImage(image, photo, item)
     const pixelsPerMm = (p.density * W) / widthMm
-    return { slotId: slot.id, dpi: pixelsPerMm * MM_PER_INCH }
+    results.push({ itemId: item.id, dpi: pixelsPerMm * MM_PER_INCH })
   })
+  return results
 }

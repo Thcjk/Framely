@@ -1,39 +1,45 @@
 /**
  * Die Arbeitsfläche.
  *
- * Hier passiert die direkte Manipulation: ein Bild lässt sich innerhalb
- * seiner Zelle verschieben (Maus ziehen / Finger wischen) und zoomen
- * (Mausrad / zwei Finger). Gezeichnet wird mit `renderProject` – exakt
- * derselben Funktion wie beim Export.
+ * Hier passiert die direkte Gestaltung:
+ *   - Element ziehen  = verschieben
+ *   - Ecke ziehen     = Grösse ändern
+ *   - Modus „Ausschnitt“ (oder Alt-Taste) = Bild innerhalb des Elements
+ *     verschieben; Mausrad / zwei Finger zoomen den Ausschnitt
+ *
+ * Gezeichnet wird mit `renderSlide` – exakt derselben Funktion wie beim
+ * Export, damit die Vorschau verbindlich ist.
  */
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useProject } from '../state/ProjectContext.jsx'
-import { renderProject, geometry, projectCells, photoRect } from '../lib/render.js'
-import { hitTest, panSlot, zoomSlot, clampRect, ZOOM_MAX, ZOOM_MIN } from '../lib/interact.js'
+import { renderSlide, toPixels } from '../lib/render.js'
+import {
+  hitTest, handleAt, moveRect, resizeRect, panImage, zoomImage, itemPhotoRect,
+  ZOOM_MAX, ZOOM_MIN,
+} from '../lib/interact.js'
 import { resolveFormat } from '../lib/formats.js'
-import { getLayout } from '../lib/layouts.js'
 
 export default function Stage() {
   const {
-    project, images, selectedSlotId, setSelectedSlotId,
-    patchSlot, addFiles, clearSlot, swapSlots, addSlot, removeSlot, update,
+    project, slide, index, images, selectedItemId, setSelectedItemId,
+    patchItem, addFiles, deleteItem, stackItem,
   } = useProject()
 
   const wrapRef = useRef(null)
   const canvasRef = useRef(null)
   const fileInputRef = useRef(null)
-  const pendingSlot = useRef(null)
+  const pendingItem = useRef(null)
   const pointers = useRef(new Map())
   const gesture = useRef(null)
 
   const [box, setBox] = useState({ width: 0, height: 0 })
-  const [editCells, setEditCells] = useState(false)
+  const [cropMode, setCropMode] = useState(false)
   const [dragOver, setDragOver] = useState(false)
 
-  const layout = project ? getLayout(project.layoutId) : null
-  const freeform = Boolean(layout?.freeform)
   const format = project ? resolveFormat(project) : null
+  const total = project?.slides.length ?? 1
+  const selected = slide?.items.find((i) => i.id === selectedItemId) ?? null
 
   // --- Verfügbaren Platz messen -------------------------------------------
   useLayoutEffect(() => {
@@ -47,8 +53,7 @@ export default function Stage() {
     return () => observer.disconnect()
   }, [])
 
-  // Anzeigegrösse: Seitenverhältnis in den verfügbaren Platz einpassen.
-  const ratio = format?.ratio ?? 1
+  const ratio = format?.ratio ?? 0.8
   let displayW = box.width
   let displayH = displayW / ratio
   if (displayH > box.height) {
@@ -61,7 +66,7 @@ export default function Stage() {
   // --- Zeichnen ------------------------------------------------------------
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || !project || displayW === 0) return
+    if (!canvas || !project || !slide || displayW === 0) return
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const W = Math.round(displayW * dpr)
     const H = Math.round(displayH * dpr)
@@ -70,24 +75,33 @@ export default function Stage() {
       canvas.height = H
     }
     const ctx = canvas.getContext('2d')
-    renderProject(ctx, project, images, W, H, { placeholders: true, selectedSlotId })
+    renderSlide(ctx, {
+      project, slide, images, index, total, W, H,
+      placeholders: true,
+      selectedItemId,
+    })
 
-    // Griffe für das freie Layout zusätzlich einzeichnen (nur Vorschau).
-    if (freeform && editCells) {
-      const { cells } = geometry(project, W, H)
-      cells.forEach((c, i) => {
-        const active = project.slots[i]?.id === selectedSlotId
-        ctx.strokeStyle = active ? '#111' : 'rgba(17,17,17,.35)'
-        ctx.lineWidth = 1.5 * dpr
-        ctx.strokeRect(c.x, c.y, c.w, c.h)
-        const s = 16 * dpr
-        ctx.fillStyle = active ? '#111' : 'rgba(17,17,17,.45)'
-        ctx.fillRect(c.x + c.w - s, c.y + c.h - s, s, s)
-      })
+    // Anfasser des gewählten Elements zusätzlich einzeichnen (nur Vorschau).
+    const item = slide.items.find((i) => i.id === selectedItemId)
+    if (item) {
+      const b = toPixels(item.rect, W, H)
+      const s = 9 * dpr
+      ctx.fillStyle = '#111111'
+      ctx.strokeStyle = '#ffffff'
+      ctx.lineWidth = 1.5 * dpr
+      for (const [hx, hy] of [
+        [b.x, b.y],
+        [b.x + b.w, b.y],
+        [b.x, b.y + b.h],
+        [b.x + b.w, b.y + b.h],
+      ]) {
+        ctx.fillRect(hx - s / 2, hy - s / 2, s, s)
+        ctx.strokeRect(hx - s / 2, hy - s / 2, s, s)
+      }
     }
-  }, [project, images, selectedSlotId, displayW, displayH, freeform, editCells])
+  }, [project, slide, images, index, total, selectedItemId, displayW, displayH])
 
-  // --- Koordinaten eines Zeigers in Leinwand-Einheiten ----------------------
+  // --- Koordinaten eines Zeigers in Leinwand-Einheiten ---------------------
   const toCanvas = useCallback((event) => {
     const canvas = canvasRef.current
     const rect = canvas.getBoundingClientRect()
@@ -97,107 +111,100 @@ export default function Stage() {
     }
   }, [])
 
-  const canvasSize = () => {
-    const canvas = canvasRef.current
-    return { W: canvas.width, H: canvas.height }
-  }
+  const size = () => ({ W: canvasRef.current.width, H: canvasRef.current.height })
 
-  const openFilePicker = (slotId) => {
-    pendingSlot.current = slotId
+  const openFilePicker = (itemId) => {
+    pendingItem.current = itemId
     fileInputRef.current?.click()
   }
 
   // --- Zeiger-Ereignisse ---------------------------------------------------
   const onPointerDown = (event) => {
-    if (!project) return
+    if (!slide) return
     const canvas = canvasRef.current
     canvas.setPointerCapture(event.pointerId)
     const point = toCanvas(event)
     pointers.current.set(event.pointerId, point)
+    const { W, H } = size()
+    const dpr = Math.min(window.devicePixelRatio || 1, 2)
 
-    const { W, H } = canvasSize()
-    const hit = hitTest(project, W, H, point.x, point.y)
+    // Zuerst prüfen: sitzt der Zeiger auf einem Anfasser des gewählten Elements?
+    if (selected) {
+      const handle = handleAt(toPixels(selected.rect, W, H), point.x, point.y, 12 * dpr)
+      if (handle) {
+        gesture.current = { type: 'resize', itemId: selected.id, handle, start: point, rect: selected.rect }
+        return
+      }
+    }
+
+    const hit = hitTest(slide, W, H, point.x, point.y)
     if (!hit) {
-      setSelectedSlotId(null)
+      setSelectedItemId(null)
       gesture.current = null
       return
     }
-    setSelectedSlotId(hit.slot.id)
+    setSelectedItemId(hit.item.id)
 
-    // Zwei Finger = Zoom-Geste
     if (pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()]
       gesture.current = {
         type: 'pinch',
-        slotId: hit.slot.id,
+        itemId: hit.item.id,
         distance: Math.hypot(a.x - b.x, a.y - b.y),
       }
       return
     }
 
-    if (freeform && editCells) {
-      const cells = geometry(project, W, H).cells
-      const c = cells[hit.index]
-      const handle = 16 * Math.min(window.devicePixelRatio || 1, 2)
-      const onHandle = point.x > c.x + c.w - handle && point.y > c.y + c.h - handle
-      gesture.current = {
-        type: onHandle ? 'resize' : 'move',
-        slotId: hit.slot.id,
-        index: hit.index,
-        start: point,
-        rect: projectCells(project)[hit.index],
-      }
-      return
+    const crop = (cropMode || event.altKey) && hit.item.type === 'image' && hit.item.imageId
+    gesture.current = {
+      type: crop ? 'crop' : 'move',
+      itemId: hit.item.id,
+      start: point,
+      last: point,
+      rect: hit.item.rect,
     }
-
-    gesture.current = { type: 'pan', slotId: hit.slot.id, last: point }
   }
 
   const onPointerMove = (event) => {
-    if (!project || !gesture.current) return
+    if (!slide || !gesture.current) return
     const point = toCanvas(event)
     pointers.current.set(event.pointerId, point)
-    const { W, H } = canvasSize()
+    const { W, H } = size()
     const g = gesture.current
-    const index = project.slots.findIndex((s) => s.id === g.slotId)
-    if (index < 0) return
-    const slot = project.slots[index]
-    const { cells, short } = geometry(project, W, H)
+    const item = slide.items.find((i) => i.id === g.itemId)
+    if (!item) return
 
     if (g.type === 'pinch' && pointers.current.size >= 2) {
       const [a, b] = [...pointers.current.values()]
       const distance = Math.hypot(a.x - b.x, a.y - b.y)
-      const image = slot.imageId ? images.get(slot.imageId) : null
+      const image = item.imageId ? images.get(item.imageId) : null
       if (image && g.distance > 0) {
-        const rect = photoRect(cells[index], project, short)
-        const next = zoomSlot(slot, image, rect, distance / g.distance, (a.x + b.x) / 2, (a.y + b.y) / 2)
-        patchSlot(slot.id, { zoom: next.zoom, offsetX: next.offsetX, offsetY: next.offsetY })
+        const rect = itemPhotoRect(item, project, W, H)
+        patchItem(item.id, zoomImage(item, image, rect, distance / g.distance, (a.x + b.x) / 2, (a.y + b.y) / 2))
       }
       gesture.current = { ...g, distance }
       return
     }
 
-    if (g.type === 'pan') {
-      const image = slot.imageId ? images.get(slot.imageId) : null
+    if (g.type === 'crop') {
+      const image = images.get(item.imageId)
       if (!image) return
-      const rect = photoRect(cells[index], project, short)
-      const next = panSlot(slot, image, rect, point.x - g.last.x, point.y - g.last.y)
-      patchSlot(slot.id, { offsetX: next.offsetX, offsetY: next.offsetY })
+      const rect = itemPhotoRect(item, project, W, H)
+      patchItem(item.id, panImage(item, image, rect, point.x - g.last.x, point.y - g.last.y))
       gesture.current = { ...g, last: point }
       return
     }
 
-    if (g.type === 'move' || g.type === 'resize') {
-      const dx = (point.x - g.start.x) / W
-      const dy = (point.y - g.start.y) / H
-      const base = g.rect
-      const rect =
-        g.type === 'move'
-          ? { ...base, x: base.x + dx, y: base.y + dy }
-          : { ...base, w: base.w + dx, h: base.h + dy }
-      update((current) => ({
-        slots: current.slots.map((s) => (s.id === g.slotId ? { ...s, rect: clampRect(rect) } : s)),
-      }))
+    const dx = (point.x - g.start.x) / W
+    const dy = (point.y - g.start.y) / H
+
+    if (g.type === 'move') {
+      patchItem(item.id, { rect: moveRect(g.rect, dx, dy) })
+      return
+    }
+
+    if (g.type === 'resize') {
+      patchItem(item.id, { rect: resizeRect(g.rect, g.handle, dx, dy, event.shiftKey) })
     }
   }
 
@@ -206,55 +213,81 @@ export default function Stage() {
     if (pointers.current.size === 0) gesture.current = null
   }
 
-  const onClick = (event) => {
-    if (!project) return
-    const point = toCanvas(event)
-    const { W, H } = canvasSize()
-    const hit = hitTest(project, W, H, point.x, point.y)
-    if (hit && !hit.slot.imageId) openFilePicker(hit.slot.id)
-  }
-
   const onWheel = (event) => {
-    if (!project) return
-    event.preventDefault()
+    if (!slide) return
     const point = toCanvas(event)
-    const { W, H } = canvasSize()
-    const hit = hitTest(project, W, H, point.x, point.y)
-    if (!hit?.slot.imageId) return
-    const image = images.get(hit.slot.imageId)
+    const { W, H } = size()
+    const hit = hitTest(slide, W, H, point.x, point.y)
+    if (!hit || hit.item.type !== 'image' || !hit.item.imageId) return
+    event.preventDefault()
+    const image = images.get(hit.item.imageId)
     if (!image) return
-    const next = zoomSlot(hit.slot, image, hit.rect, Math.exp(-event.deltaY * 0.0015), point.x, point.y)
-    patchSlot(hit.slot.id, { zoom: next.zoom, offsetX: next.offsetX, offsetY: next.offsetY })
+    const rect = itemPhotoRect(hit.item, project, W, H)
+    patchItem(hit.item.id, zoomImage(hit.item, image, rect, Math.exp(-event.deltaY * 0.0015), point.x, point.y))
   }
 
-  // --- Dateien direkt auf eine Zelle ziehen --------------------------------
+  const onClick = (event) => {
+    if (!slide || gesture.current?.moved) return
+    const point = toCanvas(event)
+    const { W, H } = size()
+    const hit = hitTest(slide, W, H, point.x, point.y)
+    if (hit?.item.type === 'image' && !hit.item.imageId) openFilePicker(hit.item.id)
+  }
+
+  // --- Dateien direkt auf ein Element ziehen -------------------------------
   const onDrop = (event) => {
     event.preventDefault()
     setDragOver(false)
-    if (!project) return
+    if (!slide) return
     const point = toCanvas(event)
-    const { W, H } = canvasSize()
-    const hit = hitTest(project, W, H, point.x, point.y)
+    const { W, H } = size()
+    const hit = hitTest(slide, W, H, point.x, point.y)
     const imageId = event.dataTransfer.getData('text/framely-image')
-    if (imageId && hit) {
-      patchSlot(hit.slot.id, { imageId, zoom: 1, offsetX: 0, offsetY: 0, rotation: 0 })
-      setSelectedSlotId(hit.slot.id)
+    if (imageId && hit?.item.type === 'image') {
+      patchItem(hit.item.id, { imageId, zoom: 1, offsetX: 0, offsetY: 0, rotation: 0 })
+      setSelectedItemId(hit.item.id)
       return
     }
-    if (event.dataTransfer.files?.length) addFiles(event.dataTransfer.files, hit?.slot.id ?? null)
+    if (event.dataTransfer.files?.length) {
+      addFiles(event.dataTransfer.files, hit?.item.type === 'image' ? hit.item.id : null)
+    }
   }
 
-  const selected = project?.slots.find((s) => s.id === selectedSlotId) ?? null
-  const selectedIndex = project ? project.slots.findIndex((s) => s.id === selectedSlotId) : -1
+  // --- Tastatur: Elemente feinjustieren und löschen ------------------------
+  useEffect(() => {
+    const onKey = (event) => {
+      if (!selected) return
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault()
+        deleteItem(selected.id)
+        return
+      }
+      const step = event.shiftKey ? 0.02 : 0.004
+      const moves = {
+        ArrowLeft: [-step, 0],
+        ArrowRight: [step, 0],
+        ArrowUp: [0, -step],
+        ArrowDown: [0, step],
+      }
+      if (moves[event.key]) {
+        event.preventDefault()
+        const [dx, dy] = moves[event.key]
+        patchItem(selected.id, { rect: moveRect(selected.rect, dx, dy) })
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selected, deleteItem, patchItem])
 
   const zoomBy = (factor) => {
-    if (!selected?.imageId || !project) return
-    const { W, H } = canvasSize()
-    const { cells, short } = geometry(project, W, H)
+    if (!selected?.imageId) return
+    const { W, H } = size()
     const image = images.get(selected.imageId)
-    const rect = photoRect(cells[selectedIndex], project, short)
-    const next = zoomSlot(selected, image, rect, factor, rect.x + rect.w / 2, rect.y + rect.h / 2)
-    patchSlot(selected.id, { zoom: next.zoom, offsetX: next.offsetX, offsetY: next.offsetY })
+    const rect = itemPhotoRect(selected, project, W, H)
+    patchItem(selected.id, zoomImage(selected, image, rect, factor, rect.x + rect.w / 2, rect.y + rect.h / 2))
   }
 
   return (
@@ -271,7 +304,7 @@ export default function Stage() {
       >
         <canvas
           ref={canvasRef}
-          className="stage__canvas"
+          className={`stage__canvas${cropMode ? ' is-crop' : ''}`}
           style={{ width: `${displayW}px`, height: `${displayH}px` }}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -284,87 +317,62 @@ export default function Stage() {
 
       <div className="stage__bar">
         <span className="stage__info">
+          {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')} ·{' '}
           {format?.label}
-          {format?.widthMm ? ` · ${format.widthMm} × ${format.heightMm} mm` : ''}
         </span>
 
         <div className="stage__tools">
-          {freeform && (
-            <>
-              <button
-                type="button"
-                className={`btn btn--ghost${editCells ? ' is-active' : ''}`}
-                onClick={() => setEditCells((v) => !v)}
-              >
-                Zellen bearbeiten
-              </button>
-              <button type="button" className="btn btn--ghost" onClick={addSlot}>
-                + Zelle
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            className={`btn btn--ghost${cropMode ? ' is-active' : ''}`}
+            onClick={() => setCropMode((v) => !v)}
+            title="Im Ausschnitt-Modus verschiebt das Ziehen das Bild innerhalb seines Rahmens (oder Alt-Taste halten)"
+          >
+            Ausschnitt
+          </button>
 
           {selected && (
             <>
-              <button type="button" className="btn btn--ghost" onClick={() => openFilePicker(selected.id)}>
-                Bild wählen
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost"
-                disabled={!selected.imageId}
-                onClick={() => patchSlot(selected.id, { rotation: ((selected.rotation ?? 0) + 90) % 360 })}
-                title="Um 90° drehen"
-              >
-                Drehen
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost"
-                disabled={!selected.imageId || (selected.zoom ?? 1) <= ZOOM_MIN}
-                onClick={() => zoomBy(1 / 1.2)}
-              >
-                −
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost"
-                disabled={!selected.imageId || (selected.zoom ?? 1) >= ZOOM_MAX}
-                onClick={() => zoomBy(1.2)}
-              >
-                +
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost"
-                disabled={selectedIndex < 1}
-                title="Bild nach vorne tauschen"
-                onClick={() => swapSlots(selected.id, project.slots[selectedIndex - 1].id)}
-              >
-                ◀
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost"
-                disabled={selectedIndex < 0 || selectedIndex >= project.slots.length - 1}
-                title="Bild nach hinten tauschen"
-                onClick={() => swapSlots(selected.id, project.slots[selectedIndex + 1].id)}
-              >
-                ▶
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost"
-                disabled={!selected.imageId}
-                onClick={() => clearSlot(selected.id)}
-              >
-                Leeren
-              </button>
-              {freeform && (
-                <button type="button" className="btn btn--ghost" onClick={() => removeSlot(selected.id)}>
-                  Zelle löschen
-                </button>
+              {selected.type === 'image' && (
+                <>
+                  <button type="button" className="btn btn--ghost" onClick={() => openFilePicker(selected.id)}>
+                    Bild wählen
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--ghost"
+                    disabled={!selected.imageId}
+                    onClick={() => patchItem(selected.id, { rotation: ((selected.rotation ?? 0) + 90) % 360 })}
+                  >
+                    Drehen
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--ghost"
+                    disabled={!selected.imageId || (selected.zoom ?? 1) <= ZOOM_MIN}
+                    onClick={() => zoomBy(1 / 1.2)}
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--ghost"
+                    disabled={!selected.imageId || (selected.zoom ?? 1) >= ZOOM_MAX}
+                    onClick={() => zoomBy(1.2)}
+                  >
+                    +
+                  </button>
+                </>
               )}
+              <button type="button" className="btn btn--ghost" onClick={() => stackItem(selected.id, 'front')}>
+                Nach vorne
+              </button>
+              <button type="button" className="btn btn--ghost" onClick={() => stackItem(selected.id, 'back')}>
+                Nach hinten
+              </button>
+              <button type="button" className="btn btn--ghost" onClick={() => deleteItem(selected.id)}>
+                Löschen
+              </button>
             </>
           )}
         </div>
@@ -377,8 +385,8 @@ export default function Stage() {
         multiple
         hidden
         onChange={(event) => {
-          if (event.target.files?.length) addFiles(event.target.files, pendingSlot.current)
-          pendingSlot.current = null
+          if (event.target.files?.length) addFiles(event.target.files, pendingItem.current)
+          pendingItem.current = null
           event.target.value = ''
         }}
       />

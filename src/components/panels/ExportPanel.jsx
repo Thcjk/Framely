@@ -1,7 +1,7 @@
-/** Panel „Export“: Bilddatei, PDF und Weg zur Druckbestellung. */
+/** Panel „Export“: einzelne Slide, ganzes Carousel, PDF, Druckbestellung. */
 import { useMemo, useState } from 'react'
 import { useProject } from '../../state/ProjectContext.jsx'
-import { exportProject, download, limitSize } from '../../lib/export.js'
+import { exportProject, downloadAll, limitSize } from '../../lib/export.js'
 import { outputPixels, resolveFormat, DPI_IDEAL } from '../../lib/formats.js'
 import DpiNotice from '../DpiNotice.jsx'
 
@@ -14,8 +14,9 @@ const LONG_EDGES = [
 const DPI_OPTIONS = [150, 300, 600]
 
 export default function ExportPanel({ onOrderPrint }) {
-  const { project, images, notify } = useProject()
+  const { project, slide, images, notify } = useProject()
   const [type, setType] = useState('jpg')
+  const [scope, setScope] = useState('all')
   const [longEdge, setLongEdge] = useState(1440)
   const [dpi, setDpi] = useState(DPI_IDEAL)
   const [quality, setQuality] = useState(0.92)
@@ -32,10 +33,13 @@ export default function ExportPanel({ onOrderPrint }) {
   const run = async () => {
     setRunning(true)
     try {
-      const result = await exportProject(project, images, { type, dpi, longEdge, quality })
-      download(result.blob, result.filename)
+      const result = await exportProject(project, images, {
+        type, scope, slideId: slide.id, dpi, longEdge, quality,
+      })
+      await downloadAll(result.files)
       notify(
-        `${result.filename} erstellt (${result.width} × ${result.height} px)` +
+        `${result.files.length} Datei${result.files.length > 1 ? 'en' : ''} erstellt ` +
+          `(${result.width} × ${result.height} px)` +
           (result.reduced ? ' – Auflösung wurde vom Browser begrenzt.' : ''),
       )
     } catch (error) {
@@ -48,35 +52,40 @@ export default function ExportPanel({ onOrderPrint }) {
 
   return (
     <div className="panel">
+      <h3 className="label">Umfang</h3>
+      <div className="segmented">
+        <button type="button" className={scope === 'all' ? 'is-active' : ''} onClick={() => setScope('all')}>
+          Alle {project.slides.length} Slides
+        </button>
+        <button type="button" className={scope === 'current' ? 'is-active' : ''} onClick={() => setScope('current')}>
+          Nur diese Slide
+        </button>
+      </div>
+
       <h3 className="label">Dateityp</h3>
       <div className="segmented">
-        {[
-          ['jpg', 'JPG'],
-          ['png', 'PNG'],
-          ['pdf', 'PDF'],
-        ].map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            className={type === value ? 'is-active' : ''}
-            onClick={() => setType(value)}
-          >
+        {[['jpg', 'JPG'], ['png', 'PNG'], ['pdf', 'PDF']].map(([value, label]) => (
+          <button key={value} type="button" className={type === value ? 'is-active' : ''} onClick={() => setType(value)}>
             {label}
           </button>
         ))}
       </div>
+      {type === 'pdf' && (
+        <p className="note">Das PDF enthält jede Slide als eigene Seite – ideal zum Drucken.</p>
+      )}
+      {type !== 'pdf' && scope === 'all' && (
+        <p className="note">
+          Es entsteht eine nummerierte Datei je Slide (…-01, …-02). Der Browser fragt eventuell
+          einmal nach, ob er mehrere Dateien laden darf.
+        </p>
+      )}
 
       {isPrint ? (
         <>
           <h3 className="label">Auflösung</h3>
           <div className="segmented segmented--small">
             {DPI_OPTIONS.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={dpi === value ? 'is-active' : ''}
-                onClick={() => setDpi(value)}
-              >
+              <button key={value} type="button" className={dpi === value ? 'is-active' : ''} onClick={() => setDpi(value)}>
                 {value} dpi
               </button>
             ))}
@@ -107,14 +116,7 @@ export default function ExportPanel({ onOrderPrint }) {
       {type !== 'png' && (
         <label className="field">
           <span className="label">JPEG-Qualität · {Math.round(quality * 100)} %</span>
-          <input
-            type="range"
-            min="0.6"
-            max="1"
-            step="0.01"
-            value={quality}
-            onChange={(e) => setQuality(Number(e.target.value))}
-          />
+          <input type="range" min="0.6" max="1" step="0.01" value={quality} onChange={(e) => setQuality(Number(e.target.value))} />
         </label>
       )}
 
@@ -124,7 +126,7 @@ export default function ExportPanel({ onOrderPrint }) {
           <dd>{format.label}</dd>
         </div>
         <div>
-          <dt>Pixel</dt>
+          <dt>Pixel je Slide</dt>
           <dd>
             {size.width} × {size.height}
           </dd>
