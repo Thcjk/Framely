@@ -23,7 +23,7 @@ import { resolveFormat } from '../lib/formats.js'
 export default function Stage() {
   const {
     project, slide, index, images, selectedItemId, setSelectedItemId,
-    patchItem, addFiles, deleteItem, stackItem,
+    patchItem, addFiles, deleteItem,
   } = useProject()
 
   const wrapRef = useRef(null)
@@ -383,60 +383,70 @@ export default function Stage() {
 
       <div className="stage__bar">
         <span className="stage__info">
-          {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')} ·{' '}
-          {format?.label}
+          {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')} · {format?.label}
         </span>
 
         <div className="stage__tools">
-          <button
-            type="button"
-            className={`btn btn--ghost${cropMode ? ' is-active' : ''}`}
-            onClick={() => setCropMode((v) => !v)}
-            title="Im Ausschnitt-Modus verschiebt das Ziehen das Bild innerhalb seines Rahmens (oder Alt-Taste halten)"
-          >
-            Ausschnitt
-          </button>
-          <button
-            type="button"
-            className={`btn btn--ghost${grid.on ? ' is-active' : ''}`}
-            onClick={() => setGrid((g) => ({ ...g, on: !g.on }))}
-            title="Spaltenraster einblenden (erscheint nie im Export)"
-          >
-            Raster
-          </button>
-          {grid.on && (
-            <label className="stage__grid">
-              <span>Spalten</span>
-              <input
-                type="number"
-                min="2"
-                max="12"
-                value={grid.count}
-                onChange={(e) => setGrid((g) => ({ ...g, count: Math.max(2, Math.min(12, Number(e.target.value))) }))}
-              />
-            </label>
-          )}
-          <button
-            type="button"
-            className={`btn btn--ghost${magnet ? ' is-active' : ''}`}
-            onClick={() => setMagnet((v) => !v)}
-            title="Elemente rasten an Rändern, Mitte und Nachbarelementen ein (Alt-Taste hebt es kurz auf)"
-          >
-            Magnet
-          </button>
+          {/* Ansicht: gilt für die ganze Arbeitsfläche */}
+          <div className="toolgroup">
+            <span className="toolgroup__label">Ansicht</span>
+            <button
+              type="button"
+              className={`btn btn--ghost${cropMode ? ' is-active' : ''}`}
+              onClick={() => setCropMode((v) => !v)}
+              title="Ziehen verschiebt das Bild innerhalb seines Rahmens (oder Alt-Taste halten)"
+            >
+              Ausschnitt
+            </button>
+            <button
+              type="button"
+              className={`btn btn--ghost${grid.on ? ' is-active' : ''}`}
+              onClick={() => setGrid((g) => ({ ...g, on: !g.on }))}
+              title="Spaltenraster einblenden (erscheint nie im Export)"
+            >
+              Raster
+            </button>
+            {grid.on && (
+              <label className="stage__grid" title="Anzahl Spalten">
+                <span>Spalten</span>
+                <input
+                  type="number"
+                  min="2"
+                  max="12"
+                  value={grid.count}
+                  onChange={(e) =>
+                    setGrid((g) => ({ ...g, count: Math.max(2, Math.min(12, Number(e.target.value))) }))
+                  }
+                />
+              </label>
+            )}
+            <button
+              type="button"
+              className={`btn btn--ghost${magnet ? ' is-active' : ''}`}
+              onClick={() => setMagnet((v) => !v)}
+              title="Elemente rasten an Rändern, Mitte und Nachbarelementen ein (Alt-Taste hebt es kurz auf)"
+            >
+              Magnet
+            </button>
+          </div>
 
+          {/* Gewähltes Element: erscheint nur, wenn etwas ausgewählt ist */}
           {selected && (
-            <>
+            <div className="toolgroup">
+              <span className="toolgroup__label">
+                {selected.type === 'text' ? 'Text' : selected.type === 'block' ? 'Fläche' : 'Bild'}
+              </span>
               {selected.type === 'image' && (
                 <>
                   <button type="button" className="btn btn--ghost" onClick={() => openFilePicker(selected.id)}>
-                    Bild wählen
+                    Wählen
                   </button>
                   <button
                     type="button"
                     className="btn btn--ghost"
                     disabled={!selected.imageId}
                     onClick={() => patchItem(selected.id, { rotation: ((selected.rotation ?? 0) + 90) % 360 })}
+                    title="Um 90° drehen"
                   >
                     Drehen
                   </button>
@@ -445,6 +455,7 @@ export default function Stage() {
                     className="btn btn--ghost"
                     disabled={!selected.imageId || (selected.zoom ?? 1) <= ZOOM_MIN}
                     onClick={() => zoomBy(1 / 1.2)}
+                    title="Ausschnitt verkleinern"
                   >
                     −
                   </button>
@@ -453,21 +464,16 @@ export default function Stage() {
                     className="btn btn--ghost"
                     disabled={!selected.imageId || (selected.zoom ?? 1) >= ZOOM_MAX}
                     onClick={() => zoomBy(1.2)}
+                    title="Ausschnitt vergrössern"
                   >
                     +
                   </button>
                 </>
               )}
-              <button type="button" className="btn btn--ghost" onClick={() => stackItem(selected.id, 'front')}>
-                Nach vorne
-              </button>
-              <button type="button" className="btn btn--ghost" onClick={() => stackItem(selected.id, 'back')}>
-                Nach hinten
-              </button>
               <button type="button" className="btn btn--ghost" onClick={() => deleteItem(selected.id)}>
                 Löschen
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>

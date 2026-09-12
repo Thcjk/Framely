@@ -62,23 +62,26 @@ export default function SlideStrip() {
       </ol>
 
       <div className="slidestrip__tools">
-        <button type="button" className="btn btn--ghost" onClick={() => shiftSlide(slide.id, -1)} title="Nach vorne schieben">
-          ◀
-        </button>
-        <button type="button" className="btn btn--ghost" onClick={() => shiftSlide(slide.id, 1)} title="Nach hinten schieben">
-          ▶
-        </button>
-        <button type="button" className="btn btn--ghost" onClick={() => copySlide(slide.id)}>
-          Duplizieren
-        </button>
-        <button
-          type="button"
-          className="btn btn--ghost"
-          disabled={project.slides.length <= 1}
-          onClick={() => removeSlide(slide.id)}
-        >
-          Slide löschen
-        </button>
+        <span className="slidestrip__label">Slides</span>
+        <div className="iconrow">
+          <button type="button" onClick={() => shiftSlide(slide.id, -1)} title="Slide nach vorne schieben">
+            ◀
+          </button>
+          <button type="button" onClick={() => shiftSlide(slide.id, 1)} title="Slide nach hinten schieben">
+            ▶
+          </button>
+          <button type="button" onClick={() => copySlide(slide.id)} title="Slide duplizieren">
+            ⧉
+          </button>
+          <button
+            type="button"
+            disabled={project.slides.length <= 1}
+            onClick={() => removeSlide(slide.id)}
+            title="Slide löschen"
+          >
+            ✕
+          </button>
+        </div>
       </div>
     </div>
   )

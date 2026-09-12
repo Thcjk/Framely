@@ -1,9 +1,9 @@
 /**
- * Panel „Serie“: die projektweiten Angaben.
- * Text-Elemente mit automatischem Inhalt (Seitenzahl, Credits, Serienname …)
- * greifen darauf zu – einmal ändern, überall aktuell.
+ * Panel „Serie“: alles, was für die ganze Serie gilt – die Angaben, die in
+ * automatischen Textelementen erscheinen, und das Ausgabeformat.
  */
 import { useProject } from '../../state/ProjectContext.jsx'
+import FormatSection from './FormatPanel.jsx'
 
 export default function SeriesPanel() {
   const { project, patchMeta, rename } = useProject()
@@ -24,6 +24,12 @@ export default function SeriesPanel() {
 
   return (
     <div className="panel">
+      <h3 className="section">Angaben</h3>
+      <p className="note">
+        Diese Angaben erscheinen überall dort, wo ein Textelement auf „automatischer
+        Inhalt“ steht – etwa in den Ecken-Marken oben links und unten rechts.
+      </p>
+
       <label className="field">
         <span className="label">Projektname</span>
         <input type="text" className="input" value={project.name} onChange={(e) => rename(e.target.value)} />
@@ -55,10 +61,8 @@ export default function SeriesPanel() {
         </div>
       </div>
 
-      <p className="note">
-        Diese Angaben erscheinen überall dort, wo ein Textelement auf „automatischer Inhalt“
-        steht – etwa die Ecken-Marken oben links und unten rechts.
-      </p>
+      <h3 className="section">Format der Serie</h3>
+      <FormatSection />
     </div>
   )
 }

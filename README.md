@@ -13,11 +13,31 @@ und Smartphone installierbar und funktioniert danach auch offline.
 
 ## Funktionen
 
+### Aufbau der Oberfläche
+
+Oben die Kopfzeile mit Projektname und Export, links die Arbeitsfläche mit der
+Werkzeugleiste und der Slide-Leiste darunter, rechts (auf dem Smartphone unten) sechs
+Reiter – nach Arbeitsschritt sortiert:
+
+| Reiter | Inhalt |
+| --- | --- |
+| **Bilder** | Import, Bibliothek, Panorama, Lightroom |
+| **Layout** | Vorlage der Slide (nach Art gruppiert), Hintergrund, neue Elemente |
+| **Element** | alles zum gerade gewählten Bild, Text oder zur Fläche |
+| **Serie** | Angaben für automatische Texte und das Format der Serie |
+| **Export** | Umfang, Dateityp, Auflösung, Druckbestellung |
+| **Projekte** | gespeicherte Serien öffnen, duplizieren, löschen |
+
+Die Werkzeugleiste über der Slide-Leiste ist in zwei Gruppen geteilt: **Ansicht**
+(Ausschnitt, Raster, Magnet – gilt für die ganze Arbeitsfläche) und die Aktionen zum
+**gewählten Element**, die nur erscheinen, wenn etwas ausgewählt ist.
+
 ### Multi-Slide-Editor (Kernstück)
 
 Ein Projekt ist ein Carousel aus beliebig vielen Slides. Jede Slide ist frei gestaltbar:
 
-- **35 Vorlagen** als Startpunkt, in acht Gruppen:
+- **35 Vorlagen** als Startpunkt, in acht Gruppen – im Panel *Layout* wählt man zuerst
+  die Art, dann die Vorlage, damit die Liste kurz bleibt:
   *Bild* (Vollbild, Bild mit Rand, Hochformat zentriert) ·
   *Split* (Vollbild neben Weissfläche – links, rechts, oben) ·
   *Mehrere* (Gross + klein, Überlappend, Zwei ungleich, Drei in Reihe, Drei versetzt,

@@ -605,6 +605,18 @@ export const SLIDE_TEMPLATES = [
 
 export const TEMPLATE_GROUPS = ['Bild', 'Split', 'Mehrere', 'Rail', 'Spread', 'Index', 'Typo', 'Frei']
 
+/** Klartext-Namen der Gruppen für die Oberfläche. */
+export const GROUP_LABELS = {
+  Bild: 'Einzelbild',
+  Split: 'Halb / Halb',
+  Mehrere: 'Mehrere',
+  Rail: 'Kopfzeile',
+  Spread: 'Doppelseite',
+  Index: 'Index',
+  Typo: 'Typografie',
+  Frei: 'Frei',
+}
+
 export function getTemplate(id) {
   return SLIDE_TEMPLATES.find((t) => t.id === id) ?? SLIDE_TEMPLATES[0]
 }

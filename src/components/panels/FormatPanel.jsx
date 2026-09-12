@@ -1,14 +1,18 @@
-/** Panel „Format“: Seitenverhältnis für Social oder physisches Druckformat. */
+/**
+ * Abschnitt „Format“: Seitenverhältnis für Social oder physisches Druckformat.
+ * Sitzt im Panel „Serie“, weil das Format zur ganzen Serie gehört und nicht
+ * zur einzelnen Slide.
+ */
 import { useProject } from '../../state/ProjectContext.jsx'
 import { SOCIAL_FORMATS, PRINT_FORMATS } from '../../lib/formats.js'
 import DpiNotice from '../DpiNotice.jsx'
 
-export default function FormatPanel() {
+export default function FormatSection() {
   const { project, patchFormat } = useProject()
   const { mode, socialId, printId, orientation } = project.format
 
   return (
-    <div className="panel">
+    <>
       <div className="segmented">
         <button
           type="button"
@@ -92,6 +96,6 @@ export default function FormatPanel() {
           <DpiNotice />
         </>
       )}
-    </div>
+    </>
   )
 }

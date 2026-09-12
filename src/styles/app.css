@@ -221,16 +221,21 @@ select {
 }
 
 .tabs button {
-  flex: 1 0 auto;
-  padding: 12px 8px;
+  flex: 1 1 auto;
+  padding: 12px 4px;
   border: 0;
   background: transparent;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--ink-soft);
   cursor: pointer;
   border-bottom: 2px solid transparent;
+}
+
+.tabs button:hover {
+  color: var(--ink);
 }
 
 .tabs button.is-active {
@@ -854,8 +859,15 @@ select {
 
 .slidestrip__tools {
   display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.slidestrip__label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
 /* ---------- Vorlagen ---------- */
@@ -994,6 +1006,122 @@ select.input {
   background: none;
 }
 
+/* ---------- Ordnung in den Panels ---------- */
+
+/* Abschnittstitel mit feiner Linie – gliedert lange Panels. */
+.section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 0;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.section::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--unit);
+  padding-bottom: var(--unit);
+  border-bottom: 1px solid var(--line);
+}
+
+.panel__title {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Kleine, gleich grosse Aktionsknöpfe (Reihenfolge, Duplizieren, Löschen) */
+.iconrow {
+  display: flex;
+  gap: 2px;
+}
+
+.iconrow button {
+  width: 28px;
+  height: 26px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.iconrow button:hover:not(:disabled) {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.iconrow button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Gruppenauswahl der Vorlagen */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 100px;
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.chip.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+/* Werkzeugleiste: zwei klar getrennte Gruppen */
+.toolgroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.toolgroup + .toolgroup {
+  margin-left: 6px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
+
+.toolgroup__label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-right: 2px;
+}
+
 /* ---------- Smartphone ---------- */
 
 @media (max-width: 860px) {
@@ -1017,13 +1145,26 @@ select.input {
   }
 
   .tabs button {
-    padding: 9px 6px;
-    font-size: 10px;
+    padding: 9px 3px;
+    font-size: 9px;
+    letter-spacing: 0.04em;
   }
 
-  /* Platz für die Arbeitsfläche: die Slide-Aktionen stehen auf kleinen
-     Bildschirmen im Panel „Slide“. */
-  .slidestrip__tools {
+  .toolgroup + .toolgroup {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding-top: 5px;
+    width: 100%;
+  }
+
+  .grid--templates {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  /* Schlanke Zeile: Beschriftung weg, die vier Knöpfe bleiben. */
+  .slidestrip__label {
     display: none;
   }
 
