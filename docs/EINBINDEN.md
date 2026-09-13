@@ -42,7 +42,7 @@ Die Kurzfassung für die Person, die eure Website betreut:
 
 Das Ergebnis: `chairoundtimphotography.ch/framely/`
 
-Voraussetzung: Ihr könnt Dateien auf euren Webspace legen (FTP, Netlify, Vercet, ein
+Voraussetzung: Ihr könnt Dateien auf euren Webspace legen (FTP, Netlify, Vercel, ein
 eigener Server – alles recht).
 
 ```bash
